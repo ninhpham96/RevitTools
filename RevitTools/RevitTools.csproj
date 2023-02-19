@@ -25,10 +25,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="DupSheet\Revit\" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <Reference Update="PresentationCore">
 	    <Private>False</Private>
 	  </Reference>
