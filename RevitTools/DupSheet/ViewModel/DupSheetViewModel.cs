@@ -49,7 +49,7 @@ namespace DupSheet.ViewModel
         [RelayCommand]
         private void Clickme(_Sheet ob)
         {
-            if(ob.isChecked)
+            if (ob.isChecked)
             {
                 SelectedSheets.Add(ob.id);
             }
@@ -111,11 +111,17 @@ namespace DupSheet.ViewModel
             List<ScheduleSheetInstance> viewSchedule = Select.instance.GetAllViewSchedule(doc);
             foreach (ScheduleSheetInstance item in viewSchedule)
             {
-                if(item.OwnerViewId == oldsheetID)
+                if (item.OwnerViewId == oldsheetID)
                 {
-                    if (item.IsTitleblockRevisionSchedule)
+                    if (!item.IsTitleblockRevisionSchedule)
                     {
                         var origin = item.Point;
+                        var scheduleID = item.ScheduleId;
+                        if (scheduleID == ElementId.InvalidElementId) continue;
+                        ViewSchedule viewschedule = doc.GetElement(scheduleID) as ViewSchedule;
+                        var schedule_view_id = viewschedule.Duplicate(ViewDuplicateOption.Duplicate);
+
+                        ScheduleSheetInstance.Create(doc, newsheetID, schedule_view_id, origin);
                     }
                 }
             }
