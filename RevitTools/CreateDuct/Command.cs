@@ -50,10 +50,11 @@ namespace CreateDuct
                 try
                 {
                     tran.Start();
-                    //var newduct2 = Duct.Create(doc, ducttype.Id, lvID, connectorsetFrom[4], point);
-                    //var newduct1 = Duct.Create(doc, ducttype.Id, lvID, target[0].Item1, target[0].Item2);
-                    MessageBox.Show(target[0].Item2.Origin.ToString());
-                    var d = doc.Create.NewElbowFitting(target[0].Item1, target[0].Item2);
+                    MessageBox.Show(target.Count.ToString());
+                    //    //var newduct2 = Duct.Create(doc, ducttype.Id, lvID, connectorsetFrom[4], point);
+                    //    //var newduct1 = Duct.Create(doc, ducttype.Id, lvID, target[0].Item1, target[0].Item2);
+                    //    MessageBox.Show(target[0].Item2.Origin.ToString());
+                    //    var d = doc.Create.NewElbowFitting(target[0].Item1, target[0].Item2);
                     tran.Commit();
                 }
                 catch (System.Exception e)
@@ -73,6 +74,8 @@ namespace CreateDuct
             //list connector.Y nho hon locOrigin.Y
             List<Connector> connsTo1 = new List<Connector>();
             List<Connector> connsTo2 = new List<Connector>();
+            List<Connector> connsTo3 = new List<Connector>();
+            List<Connector> connsTo4 = new List<Connector>();
             var locOrigin = (DuctAccessories.Location as LocationPoint).Point;
             List<Tuple<Connector, Connector>> listTarget = new List<Tuple<Connector, Connector>>();
 
@@ -101,17 +104,36 @@ namespace CreateDuct
                 while (iterator.MoveNext())
                 {
                     Connector connector = iterator.Current as Connector;
-                    if (connector != null && connector.Origin.Y >= locOrigin.Y)
+                    if (connector != null && connector.Origin.Y >= locOrigin.Y && connector.Origin.X <= locOrigin.X)
                     {
                         connsTo1.Add(connector);
                     }
-                    else if (connector != null && connector.Origin.Y <= locOrigin.Y)
+                    else if (connector != null && connector.Origin.Y >= locOrigin.Y && connector.Origin.X > locOrigin.X)
                     {
                         connsTo2.Add(connector);
                     }
+                    else if (connector != null && connector.Origin.Y <= locOrigin.Y && connector.Origin.X <= locOrigin.X)
+                    {
+                        connsTo3.Add(connector);
+                    }
+                    else if (connector != null && connector.Origin.Y < locOrigin.Y && connector.Origin.X > locOrigin.X)
+                    {
+                        connsTo4.Add(connector);
+                    }
                 }
             }
+            //SORT THEO X MIN, Y MIN
             connsFrom1.Sort((conn1, conn2) =>
+            {
+                int compareX = conn1.Origin.X.CompareTo(conn2.Origin.X);
+ 
+                if (compareX == 0)
+                {
+                    return conn1.Origin.Y.CompareTo(conn2.Origin.Y);
+                }
+                return compareX;
+            });
+            connsFrom2.Sort((conn1, conn2) =>
             {
                 int compareX = conn1.Origin.X.CompareTo(conn2.Origin.X);
 
@@ -121,6 +143,7 @@ namespace CreateDuct
                 }
                 return compareX;
             });
+            //SORT THEO Y MIN, X MIN
             connsTo1.Sort((conn1, conn2) =>
             {
                 int compareX = conn1.Origin.Y.CompareTo(conn2.Origin.Y);
@@ -131,18 +154,78 @@ namespace CreateDuct
                 }
                 return compareX;
             });
-            for (int i = 0; i < connsFrom1.Count; i++)
-            {                
-                if (connsFrom1[i].Origin.X >= connsTo1[0].Origin.X)
+            //sort theo y max, x max
+            connsTo2.Sort((conn1, conn2) =>
+            {
+                int compareX = conn2.Origin.Y.CompareTo(conn1.Origin.Y);
+
+                if (compareX == 0)
                 {
-                    Tuple<Connector,Connector> tuple = new Tuple<Connector, Connector>(connsFrom1[i], connsTo1[0]);
+                    return conn2.Origin.X.CompareTo(conn1.Origin.X);
+                }
+                return compareX;
+            });
+            // sort theo y max
+            connsTo3.Sort((conn1, conn2) =>
+            {
+                int compareX = conn2.Origin.Y.CompareTo(conn1.Origin.Y);
+
+                if (compareX == 0)
+                {
+                    return conn2.Origin.X.CompareTo(conn1.Origin.X);
+                }
+                return compareX;
+            });
+            //sort theo y min
+            connsTo4.Sort((conn1, conn2) =>
+            {
+                int compareX = conn1.Origin.Y.CompareTo(conn2.Origin.Y);
+
+                if (compareX == 0)
+                {
+                    return conn1.Origin.X.CompareTo(conn2.Origin.X);
+                }
+                return compareX;
+            });
+            for (int i = 0; i < connsFrom1.Count; i++)
+            {
+                if (connsTo1.Count>0)
+                {
+                    Tuple<Connector, Connector> tuple = new Tuple<Connector, Connector>(connsFrom1[i], connsTo1[0]);
                     listTarget.Add(tuple);
                     connsTo1.RemoveAt(0);
-                    break;
+                    continue;
+                }
+                if (connsTo2.Count > 0)
+                {
+                    Tuple<Connector, Connector> tuple = new Tuple<Connector, Connector>(connsFrom1[i], connsTo2[0]);
+                    listTarget.Add(tuple);
+                    connsTo2.RemoveAt(0);
+                    continue;
                 }
             }
-            
-            MessageBox.Show(listTarget.Count.ToString());
+            for (int i = 0; i < connsFrom2.Count; i++)
+            {
+                if (connsTo3.Count > 0)
+                {
+                    Tuple<Connector, Connector> tuple = new Tuple<Connector, Connector>(connsFrom2[i], connsTo3[0]);
+                    listTarget.Add(tuple);
+                    connsTo3.RemoveAt(0);
+                    continue;
+                }
+                if (connsTo4.Count > 0)
+                {
+                    Tuple<Connector, Connector> tuple = new Tuple<Connector, Connector>(connsFrom2[i], connsTo4[0]);
+                    listTarget.Add(tuple);
+                    connsTo4.RemoveAt(0);
+                    continue;
+                }
+            }
+
+            MessageBox.Show(connsTo1.Count.ToString()+"\n"+ 
+                connsTo2.Count.ToString() + "\n"+
+                connsTo3.Count.ToString() + "\n" + 
+                connsTo4.Count.ToString() + "\n");
 
             return listTarget;
         }
