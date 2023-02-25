@@ -1,10 +1,8 @@
 ﻿using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using System.Collections.Generic;
-using rvPoint = Autodesk.Revit.DB.Point;
 using System.Linq;
 using Autodesk.Revit.Attributes;
-using System.Windows;
 using Autodesk.Revit.DB.Mechanical;
 using System.Diagnostics;
 using System;
@@ -39,18 +37,17 @@ namespace CreateDuct
 
             var target = FindPoint(DuctAccessories, DuctTerminal);
 
-            foreach (Connector conn in connectorsetTo)
-            {
-                var loca = conn.Origin;
-            }
-            XYZ point = new XYZ(-11.2576769679356, 16.8624946926416, 10.59824783557);
-
             using (Transaction tran = new Transaction(doc, "tao duct"))
             {
                 try
                 {
                     tran.Start();
-                    MessageBox.Show(target.Count.ToString());
+                    var listpoint = GetPointtoConnect(target[0].Item1, target[0].Item2);
+
+                    //MessageBox.Show(listpoint[0].ToString() + "\n" + listpoint[1].ToString());
+
+                    Duct newduct1 = Duct.Create(doc, ducttype.Id, lvID, target[0].Item1, listpoint[0]);
+                    Duct newduct2 = Duct.Create(doc, ducttype.Id, lvID, target[0].Item2, listpoint[1]);
                     //    //var newduct2 = Duct.Create(doc, ducttype.Id, lvID, connectorsetFrom[4], point);
                     //    //var newduct1 = Duct.Create(doc, ducttype.Id, lvID, target[0].Item1, target[0].Item2);
                     //    MessageBox.Show(target[0].Item2.Origin.ToString());
@@ -80,53 +77,43 @@ namespace CreateDuct
             List<Tuple<Connector, Connector>> listTarget = new List<Tuple<Connector, Connector>>();
 
             //get connector of DuctAccessories
-            var connectorSetofDuctAccessories = DuctAccessories.MEPModel.ConnectorManager.UnusedConnectors;
-            ConnectorSetIterator iteratorofDuctAccessories = connectorSetofDuctAccessories.ForwardIterator();
-            while (iteratorofDuctAccessories.MoveNext())
+            foreach (Connector item in GetConnectors(DuctAccessories))
             {
-                Connector connector = iteratorofDuctAccessories.Current as Connector;
-                if (connector != null && connector.Origin.Y >= locOrigin.Y)
-                {
-                    connsFrom1.Add(connector);
-                }
-                else if (connector != null && connector.Origin.Y <= locOrigin.Y)
-                {
-                    connsFrom2.Add(connector);
-                }
+                if(item.Origin.Y >= locOrigin.Y)
+                    connsFrom1.Add(item);
+                else if(item.Origin.Y <= locOrigin.Y)
+                    connsFrom2.Add(item);
             }
-
-            //get connector of DuctAccessories
             //get connector of DuctTerminal
             foreach (FamilyInstance duct in listDuctTerminal)
             {
-                var connectorSet = duct.MEPModel.ConnectorManager.UnusedConnectors;
-                ConnectorSetIterator iterator = connectorSet.ForwardIterator();
-                while (iterator.MoveNext())
+                foreach (Connector connector in GetConnectors(duct))
                 {
-                    Connector connector = iterator.Current as Connector;
-                    if (connector != null && connector.Origin.Y >= locOrigin.Y && connector.Origin.X <= locOrigin.X)
+                    if (connector.Origin.Y >= locOrigin.Y && connector.Origin.X <= locOrigin.X)
                     {
                         connsTo1.Add(connector);
                     }
-                    else if (connector != null && connector.Origin.Y >= locOrigin.Y && connector.Origin.X > locOrigin.X)
+                    else if (connector.Origin.Y >= locOrigin.Y && connector.Origin.X > locOrigin.X)
                     {
                         connsTo2.Add(connector);
                     }
-                    else if (connector != null && connector.Origin.Y <= locOrigin.Y && connector.Origin.X <= locOrigin.X)
+                    else if (connector.Origin.Y <= locOrigin.Y && connector.Origin.X <= locOrigin.X)
                     {
                         connsTo3.Add(connector);
                     }
-                    else if (connector != null && connector.Origin.Y < locOrigin.Y && connector.Origin.X > locOrigin.X)
+                    else if (connector.Origin.Y < locOrigin.Y && connector.Origin.X > locOrigin.X)
                     {
                         connsTo4.Add(connector);
                     }
                 }
+
             }
+            #region sort
             //SORT THEO X MIN, Y MIN
             connsFrom1.Sort((conn1, conn2) =>
             {
                 int compareX = conn1.Origin.X.CompareTo(conn2.Origin.X);
- 
+
                 if (compareX == 0)
                 {
                     return conn1.Origin.Y.CompareTo(conn2.Origin.Y);
@@ -187,9 +174,10 @@ namespace CreateDuct
                 }
                 return compareX;
             });
+            #endregion
             for (int i = 0; i < connsFrom1.Count; i++)
             {
-                if (connsTo1.Count>0)
+                if (connsTo1.Count > 0)
                 {
                     Tuple<Connector, Connector> tuple = new Tuple<Connector, Connector>(connsFrom1[i], connsTo1[0]);
                     listTarget.Add(tuple);
@@ -221,13 +209,54 @@ namespace CreateDuct
                     continue;
                 }
             }
-
-            MessageBox.Show(connsTo1.Count.ToString()+"\n"+ 
-                connsTo2.Count.ToString() + "\n"+
-                connsTo3.Count.ToString() + "\n" + 
-                connsTo4.Count.ToString() + "\n");
-
             return listTarget;
+        }
+        public List<XYZ> GetPointtoConnect(Connector fromconn, Connector toconn)
+        {
+            if (fromconn.CoordinateSystem.BasisZ.X == -1 || fromconn.CoordinateSystem.BasisZ.X == 1)
+            {
+                return new List<XYZ>()
+                {
+                    new XYZ(toconn.Origin.X,fromconn.Origin.Y,fromconn.Origin.Z),
+                    new XYZ(toconn.Origin.X,toconn.Origin.Y,fromconn.Origin.Z)
+                };
+            }
+            else if (fromconn.CoordinateSystem.BasisZ.Y == -1 || fromconn.CoordinateSystem.BasisZ.Y == 1)
+            {
+                return new List<XYZ>()
+                {
+                    new XYZ(fromconn.Origin.X,toconn.Origin.Y,fromconn.Origin.Z),
+                    new XYZ(toconn.Origin.X,toconn.Origin.Y,fromconn.Origin.Z)
+                };
+            }
+            else
+                return null;
+        }
+        public static List<Connector> GetConnectors(FamilyInstance fam)
+        {
+            List<Connector> connectors = new List<Connector>();
+            var connectorSetofDuctAccessories = fam.MEPModel.ConnectorManager.UnusedConnectors;
+            ConnectorSetIterator iteratorofDuctAccessories = connectorSetofDuctAccessories.ForwardIterator();
+            while (iteratorofDuctAccessories.MoveNext())
+            {
+                Connector connector = iteratorofDuctAccessories.Current as Connector;
+                if (connector != null)
+                    connectors.Add(connector);
+            }
+            return connectors;
+        }
+        public static List<Connector> GetConnectors(Duct duct)
+        {
+            List<Connector> connectors = new List<Connector>();
+            var connectorSetofDuctAccessories = duct.ConnectorManager.UnusedConnectors;
+            ConnectorSetIterator iteratorofDuctAccessories = connectorSetofDuctAccessories.ForwardIterator();
+            while (iteratorofDuctAccessories.MoveNext())
+            {
+                Connector connector = iteratorofDuctAccessories.Current as Connector;
+                if (connector != null)
+                    connectors.Add(connector);
+            }
+            return connectors;
         }
     }
 }
