@@ -25,28 +25,7 @@ public class Command1 : IExternalCommand
                 .OfClass(typeof(DuctType)).ToList().Where(p => p.Name == "Taps / Short Radius").First();
 
         var select = uidoc.Selection.PickObjects(Autodesk.Revit.UI.Selection.ObjectType.Element).ToList();
-        foreach (var item in select)
-        {
-            var ele = doc.GetElement(item) as Duct;
-            if (ele != null)
-            {
-                //foreach (Connector connector in Command.GetUnConnectors(ele))
-                //{
-                //    if (connector.IsConnected == false)
-                //        connectors.Add(connector);
-                //}
-            }
-        }
-        using(Transaction tran = new Transaction(doc, "ket noi"))
-        {
-            tran.Start();
-            var duct = Duct.Create(doc, ducttype.Id, new ElementId(311), connectors[0], connectors[1]);
-            //var newele = doc.Create.NewElbowFitting(connectors[0], connectors[1]);
-
-            //Debug.WriteLine(Command.FindNearConnector(connectors)[0].Item1 + " " + Command.FindNearConnector(connectors)[0].Item2);
-            //Debug.WriteLine(Command.FindNearConnector(connectors)[1].Item1 + " " + Command.FindNearConnector(connectors)[1].Item2);
-            tran.Commit();
-        }
+              
         return Result.Succeeded;
     }
 }

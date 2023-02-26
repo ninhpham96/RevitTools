@@ -8,7 +8,7 @@
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 		<LangVersion>latest</LangVersion>
-		<Configurations>Release</Configurations>
+		<Configurations>Debug</Configurations>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="$(Configuration.Contains('Debug'))">

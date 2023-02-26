@@ -47,7 +47,7 @@ namespace CreateDuct
                     tran.Start();
                     foreach (var item in target)
                     {
-                       
+
                         var listPoint = GetPointtoConnect(item.Item1, item.Item2);
                         using (Transaction t1 = new Transaction(doc))
                         {
@@ -55,16 +55,21 @@ namespace CreateDuct
                             Duct newduct1 = Duct.Create(doc, ducttype.Id, lvID, item.Item1, listPoint[0]);
                             Duct newduct2 = Duct.Create(doc, ducttype.Id, lvID, item.Item2, listPoint[1]);
                             listconn = GetUnConnectors(new List<Duct>() { newduct1, newduct2 });
-                            Duct newduct3 = Duct.Create(doc, ducttype.Id,newduct1.MEPSystem.Id, new ElementId(311), listconn[0].Origin, listconn[1].Origin);
-                            
-                            listconns = GetConnectors(new List<Duct>() { newduct1, newduct2, newduct3 });
-                            MessageBox.Show("1");
-                            //foreach (Tuple<Connector, Connector> tup in FindNearConnector(listconns))
-                            //{
-                            //    MessageBox.Show("1");
-                            //    var newduct = doc.Create.NewElbowFitting(tup.Item1, tup.Item2);
-                            //}
-                            //t1.Commit();
+                            Duct newduct3 = Duct.Create(doc, ducttype.Id, new ElementId(311), listconn[0], listconn[1]);
+                            listconns = GetConnectors(newduct3);
+                            var temp = new List<Connector>();
+                            foreach (var conn in listconns)
+                            {
+                                foreach (var con in listconn)
+                                {
+                                    if (conn.Origin.DistanceTo(con.Origin) <= 0.0001)
+                                    {
+                                        var newduct = doc.Create.NewElbowFitting(conn, con);
+
+                                    }
+                                }
+                            }                            
+                            t1.Commit();
                         }
                     }
                     tran.Assimilate();
@@ -74,7 +79,6 @@ namespace CreateDuct
                     Debug.WriteLine(e.Message);
                 }
             }
-
             return Result.Succeeded;
         }
 
@@ -308,41 +312,6 @@ namespace CreateDuct
                 connectors.AddRange(GetUnConnectors(duct));
             }
             return connectors;
-        }
-        //public void ConnectedMuitlDuct(Document doc, List<Duct> ducts)
-        //{
-        //    using (Transaction t1 = new Transaction(doc, "tao duct"))
-        //    {
-        //        t1.Start();
-        //        List<Connector> listconns = GetUnConnectors(ducts);
-        //        foreach (Tuple<Connector, Connector> item in FindNearConnector(listconns))
-        //        {
-        //            var newduct = doc.Create.NewElbowFitting(item.Item1, item.Item2);
-        //        }
-        //        t1.Commit();
-        //    }
-        //}
-        public List<Tuple<Connector, Connector>> FindNearConnector(List<Connector> listconn)
-        {
-            List<Tuple<Connector, Connector>> tuples = new List<Tuple<Connector, Connector>>();
-            double distancemin = Int32.MaxValue;
-            if (listconn.Count <= 3)
-            {
-                for (int i = 0; i < listconn.Count; i++)
-                {
-                    for (int j = i + 1; j < listconn.Count; j++)
-                    {
-                        if (listconn[i].Origin.DistanceTo(listconn[j].Origin) < distancemin)
-                        {
-                            tuples.Clear();
-                            distancemin = listconn[i].Origin.DistanceTo(listconn[j].Origin);
-                            tuples.Add(new Tuple<Connector, Connector>(listconn[i], listconn[j]));
-                            tuples.Add(new Tuple<Connector, Connector>(listconn[listconn.Count - 1 - i], listconn[listconn.Count - 1 - j]));
-                        }
-                    }
-                }
-            }
-            return tuples;
         }
     }
 }
