@@ -25,19 +25,16 @@ namespace CreateDuct
             ElementId lvID = new ElementId(311);
 
             #region get data
-            var DuctAccessories = new FilteredElementCollector(doc, doc.ActiveView.Id)
+            FamilyInstance DuctAccessories = new FilteredElementCollector(doc, doc.ActiveView.Id)
                 .OfCategory(BuiltInCategory.OST_DuctAccessory).Cast<FamilyInstance>()
                 .ToList().FirstOrDefault();
-            var DuctTerminal = new FilteredElementCollector(doc, doc.ActiveView.Id)
+            List< FamilyInstance> DuctTerminal = new FilteredElementCollector(doc, doc.ActiveView.Id)
                 .OfCategory(BuiltInCategory.OST_DuctTerminal).Cast<FamilyInstance>()
                 .ToList();
             var ducttype = new FilteredElementCollector(doc).WhereElementIsElementType()
                 .OfClass(typeof(DuctType)).ToList().Where(p => p.Name == "Taps / Short Radius").First();
             #endregion
-
-
-            var target = FindPoint(DuctAccessories, DuctTerminal);
-
+            List<Tuple<Connector,Connector>> target = FindPoint(DuctAccessories, DuctTerminal);
             using (TransactionGroup tran = new TransactionGroup(doc, "tao duct"))
             {
                 try
@@ -47,7 +44,6 @@ namespace CreateDuct
                     tran.Start();
                     foreach (var item in target)
                     {
-
                         var listPoint = GetPointtoConnect(item.Item1, item.Item2);
                         using (Transaction t1 = new Transaction(doc))
                         {
@@ -65,7 +61,6 @@ namespace CreateDuct
                                     if (conn.Origin.DistanceTo(con.Origin) <= 0.0001)
                                     {
                                         var newduct = doc.Create.NewElbowFitting(conn, con);
-
                                     }
                                 }
                             }                            
@@ -81,7 +76,6 @@ namespace CreateDuct
             }
             return Result.Succeeded;
         }
-
         public List<Tuple<Connector, Connector>> FindPoint(FamilyInstance DuctAccessories, List<FamilyInstance> listDuctTerminal)
         {
             //list connector.Y lon hon locOrigin.Y
