@@ -7,6 +7,7 @@ using Autodesk.Revit.DB.Mechanical;
 using System.Diagnostics;
 using System;
 using System.Windows;
+using Autodesk.Revit.UI.Selection;
 
 namespace CreateDuct
 {
@@ -18,108 +19,129 @@ namespace CreateDuct
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
-            Autodesk.Revit.DB.Document doc = uidoc.Document;
-
-            List<Connector> connectorsetFrom = new List<Connector>();
-            List<Connector> connectorsetTo = new List<Connector>();
-            ElementId lvID = new ElementId(311);
-
-            #region get data
-            FamilyInstance DuctAccessories = new FilteredElementCollector(doc, doc.ActiveView.Id)
-                .OfCategory(BuiltInCategory.OST_DuctAccessory).Cast<FamilyInstance>()
-                .ToList().FirstOrDefault();
-            List< FamilyInstance> DuctTerminal = new FilteredElementCollector(doc, doc.ActiveView.Id)
-                .OfCategory(BuiltInCategory.OST_DuctTerminal).Cast<FamilyInstance>()
-                .ToList();
-            var ducttype = new FilteredElementCollector(doc).WhereElementIsElementType()
-                .OfClass(typeof(DuctType)).ToList().Where(p => p.Name == "Taps / Short Radius").First();
-            #endregion
-            List<Tuple<Connector,Connector>> target = FindPoint(DuctAccessories, DuctTerminal);
-            using (TransactionGroup tran = new TransactionGroup(doc, "tao duct"))
+            Document doc = uidoc.Document;
+            ElementId lvID;
+            var filter = new DuctAccessoryFilter();
+            if (doc.ActiveView.GetType().Name == "View3D")
             {
+                MessageBox.Show("Go to view 2D to run.", "Warning", MessageBoxButton.OK);
+                return Result.Failed;
+            }
+            else
+            {
+                lvID = doc.ActiveView.GenLevel.Id;
                 try
                 {
-                    List<Connector> listconn;
-                    List<Connector> listconns;
-                    tran.Start();
-                    foreach (var item in target)
+                    FamilyInstance Fasu = doc.GetElement(uidoc.Selection.PickObject(Autodesk.Revit.UI.Selection.ObjectType.Element, filter, "Please, pick FASU!")) as FamilyInstance;
+                    List<FamilyInstance> listAnemostat = new FilteredElementCollector(doc, doc.ActiveView.Id)
+                    .OfCategory(BuiltInCategory.OST_DuctTerminal).Cast<FamilyInstance>().ToList();
+                    ElementId ducttypeId = new FilteredElementCollector(doc).WhereElementIsElementType()
+                        .OfClass(typeof(DuctType)).ToList().Where(p => p.Name == "Taps / Short Radius").First().Id;
+
+                    List<Tuple<Connector, Connector>> listPairConnector = FindConnectorNearConnector(Fasu, listAnemostat);
+                    using (TransactionGroup tranG = new TransactionGroup(doc, "AutoRoute"))
                     {
-                        var listPoint = GetPointtoConnect(item.Item1, item.Item2);
-                        using (Transaction t1 = new Transaction(doc))
+                        tranG.Start();
+                        foreach (Tuple<Connector, Connector> pairConnector in listPairConnector)
                         {
-                            t1.Start("tao duct");
-                            Duct newduct1 = Duct.Create(doc, ducttype.Id, lvID, item.Item1, listPoint[0]);
-                            Duct newduct2 = Duct.Create(doc, ducttype.Id, lvID, item.Item2, listPoint[1]);
-                            listconn = GetUnConnectors(new List<Duct>() { newduct1, newduct2 });
-                            Duct newduct3 = Duct.Create(doc, ducttype.Id, new ElementId(311), listconn[0], listconn[1]);
-                            listconns = GetConnectors(newduct3);
-                            var temp = new List<Connector>();
-                            foreach (var conn in listconns)
+                            if (CheckDistance(pairConnector))
+                                CreateMultiDuct(pairConnector, doc, ducttypeId, lvID);
+                            else
                             {
-                                foreach (var con in listconn)
-                                {
-                                    if (conn.Origin.DistanceTo(con.Origin) <= 0.0001)
-                                    {
-                                        var newduct = doc.Create.NewElbowFitting(conn, con);
-                                    }
-                                }
-                            }                            
-                            t1.Commit();
+                                CreateTwoDuct(pairConnector, doc, ducttypeId, lvID);
+                            }
+                        }
+                        tranG.Assimilate();
+                    }
+                }
+                catch (Exception)
+                {
+                }
+                return Result.Succeeded;
+            }
+
+        }
+        void CreateMultiDuct(Tuple<Connector, Connector> pairConnector, Document doc, ElementId ducttypeId, ElementId lvID)
+        {
+            using (Transaction t1 = new Transaction(doc))
+            {
+                t1.Start("Create Multi Duct");
+                List<XYZ> listLocation = GetLocaToCreateDuct(pairConnector.Item1, pairConnector.Item2);
+                Duct newduct1 = Duct.Create(doc, ducttypeId, lvID, pairConnector.Item1, listLocation[0]);
+                Duct newduct2 = Duct.Create(doc, ducttypeId, lvID, pairConnector.Item2, listLocation[1]);
+                Duct newduct3 = Duct.Create(doc, ducttypeId, lvID, GetUnConnectors(newduct1).First(), GetUnConnectors(newduct2).First());
+                foreach (var conn in GetConnectors(newduct3))
+                {
+                    foreach (var con in GetConnectors(new List<Duct>() { newduct1, newduct2 }))
+                    {
+                        Debug.WriteLine(GetConnectors(new List<Duct>() { newduct1, newduct2 }).Count);
+                        if (conn.Origin.DistanceTo(con.Origin) == 0)
+                        {
+                            var newduct = doc.Create.NewElbowFitting(conn, con);
                         }
                     }
-                    tran.Assimilate();
                 }
-                catch (System.Exception e)
-                {
-                    Debug.WriteLine(e.Message);
-                }
+                t1.Commit();
             }
-            return Result.Succeeded;
         }
-        public List<Tuple<Connector, Connector>> FindPoint(FamilyInstance DuctAccessories, List<FamilyInstance> listDuctTerminal)
+        void CreateTwoDuct(Tuple<Connector, Connector> pairConnector, Document doc, ElementId ducttypeId, ElementId lvID)
         {
-            //list connector.Y lon hon locOrigin.Y
-            List<Connector> connsFrom1 = new List<Connector>();
-            List<Connector> connsFrom2 = new List<Connector>();
-            //list connector.Y nho hon locOrigin.Y
-            List<Connector> connsTo1 = new List<Connector>();
-            List<Connector> connsTo2 = new List<Connector>();
-            List<Connector> connsTo3 = new List<Connector>();
-            List<Connector> connsTo4 = new List<Connector>();
-            var locOrigin = (DuctAccessories.Location as LocationPoint).Point;
-            List<Tuple<Connector, Connector>> listTarget = new List<Tuple<Connector, Connector>>();
-
-            //get connector of DuctAccessories
-            foreach (Connector item in GetUnConnectors(DuctAccessories))
+            using (Transaction t1 = new Transaction(doc))
             {
-                if (item.Origin.Y >= locOrigin.Y)
-                    connsFrom1.Add(item);
-                else if (item.Origin.Y <= locOrigin.Y)
-                    connsFrom2.Add(item);
+                t1.Start("Create Two Duct");
+                List<XYZ> listLocation = GetLocaToCreateDuct(pairConnector.Item1, pairConnector.Item2);
+                Duct newduct1 = Duct.Create(doc, ducttypeId, lvID, pairConnector.Item1, listLocation[0]);
+                Duct newduct2 = Duct.Create(doc, ducttypeId, lvID, pairConnector.Item2, GetUnConnectors(newduct1).First());
+                foreach (var conn in GetConnectors(newduct1))
+                {
+                    foreach (var con in GetConnectors(newduct2))
+                    {
+                        if (conn.Origin.DistanceTo(con.Origin) == 0)
+                        {
+                            var newduct = doc.Create.NewElbowFitting(conn, con);
+                        }
+                    }
+                }
+                t1.Commit();
             }
-            //get connector of DuctTerminal
-            foreach (Connector connector in GetUnConnectors(listDuctTerminal))
+        }
+        List<Tuple<Connector, Connector>> FindConnectorNearConnector(FamilyInstance Fasu, List<FamilyInstance> listAnemo)
+        {
+            List<Connector> connofFasu1 = new List<Connector>();
+            List<Connector> connofFasu2 = new List<Connector>();
+            List<Connector> connofAnemo1 = new List<Connector>();
+            List<Connector> connofAnemo2 = new List<Connector>();
+            List<Connector> connofAnemo3 = new List<Connector>();
+            List<Connector> connofAnemo4 = new List<Connector>();
+            var locaOrigin = (Fasu.Location as LocationPoint).Point;
+            List<Tuple<Connector, Connector>> result = new List<Tuple<Connector, Connector>>();
+            foreach (Connector conn in GetUnConnectors(Fasu))
             {
-                if (connector.Origin.Y >= locOrigin.Y && connector.Origin.X <= locOrigin.X)
+                if (conn.Origin.Y >= locaOrigin.Y)
+                    connofFasu1.Add(conn);
+                else if (conn.Origin.Y <= locaOrigin.Y)
+                    connofFasu2.Add(conn);
+            }
+            foreach (Connector conn in GetUnConnectors(listAnemo))
+            {
+                if (conn.Origin.Y >= locaOrigin.Y && conn.Origin.X <= locaOrigin.X)
                 {
-                    connsTo1.Add(connector);
+                    connofAnemo1.Add(conn);
                 }
-                else if (connector.Origin.Y >= locOrigin.Y && connector.Origin.X > locOrigin.X)
+                else if (conn.Origin.Y >= locaOrigin.Y && conn.Origin.X > locaOrigin.X)
                 {
-                    connsTo2.Add(connector);
+                    connofAnemo2.Add(conn);
                 }
-                else if (connector.Origin.Y <= locOrigin.Y && connector.Origin.X <= locOrigin.X)
+                else if (conn.Origin.Y <= locaOrigin.Y && conn.Origin.X <= locaOrigin.X)
                 {
-                    connsTo3.Add(connector);
+                    connofAnemo3.Add(conn);
                 }
-                else if (connector.Origin.Y < locOrigin.Y && connector.Origin.X > locOrigin.X)
+                else if (conn.Origin.Y < locaOrigin.Y && conn.Origin.X > locaOrigin.X)
                 {
-                    connsTo4.Add(connector);
+                    connofAnemo4.Add(conn);
                 }
             }
-            #region sort
-            //SORT THEO X MIN, Y MIN
-            connsFrom1.Sort((conn1, conn2) =>
+            connofFasu1.Sort((conn1, conn2) =>
             {
                 int compareX = conn1.Origin.X.CompareTo(conn2.Origin.X);
 
@@ -129,7 +151,7 @@ namespace CreateDuct
                 }
                 return compareX;
             });
-            connsFrom2.Sort((conn1, conn2) =>
+            connofFasu2.Sort((conn1, conn2) =>
             {
                 int compareX = conn1.Origin.X.CompareTo(conn2.Origin.X);
 
@@ -139,8 +161,7 @@ namespace CreateDuct
                 }
                 return compareX;
             });
-            //SORT THEO Y MIN, X MIN
-            connsTo1.Sort((conn1, conn2) =>
+            connofAnemo1.Sort((conn1, conn2) =>
             {
                 int compareX = conn1.Origin.Y.CompareTo(conn2.Origin.Y);
 
@@ -150,8 +171,7 @@ namespace CreateDuct
                 }
                 return compareX;
             });
-            //sort theo y max, x max
-            connsTo2.Sort((conn1, conn2) =>
+            connofAnemo2.Sort((conn1, conn2) =>
             {
                 int compareX = conn2.Origin.Y.CompareTo(conn1.Origin.Y);
 
@@ -161,8 +181,7 @@ namespace CreateDuct
                 }
                 return compareX;
             });
-            // sort theo y max
-            connsTo3.Sort((conn1, conn2) =>
+            connofAnemo3.Sort((conn1, conn2) =>
             {
                 int compareX = conn2.Origin.Y.CompareTo(conn1.Origin.Y);
 
@@ -172,8 +191,7 @@ namespace CreateDuct
                 }
                 return compareX;
             });
-            //sort theo y min
-            connsTo4.Sort((conn1, conn2) =>
+            connofAnemo4.Sort((conn1, conn2) =>
             {
                 int compareX = conn1.Origin.Y.CompareTo(conn2.Origin.Y);
 
@@ -183,104 +201,103 @@ namespace CreateDuct
                 }
                 return compareX;
             });
-            #endregion
-            for (int i = 0; i < connsFrom1.Count; i++)
+            for (int i = 0; i < connofFasu1.Count; i++)
             {
-                if (connsTo1.Count > 0)
+                if (connofAnemo1.Count > 0)
                 {
-                    Tuple<Connector, Connector> tuple = new Tuple<Connector, Connector>(connsFrom1[i], connsTo1[0]);
-                    listTarget.Add(tuple);
-                    connsTo1.RemoveAt(0);
+                    Tuple<Connector, Connector> tuple = new Tuple<Connector, Connector>(connofFasu1[i], connofAnemo1[0]);
+                    result.Add(tuple);
+                    connofAnemo1.RemoveAt(0);
                     continue;
                 }
-                if (connsTo2.Count > 0)
+                if (connofAnemo2.Count > 0)
                 {
-                    Tuple<Connector, Connector> tuple = new Tuple<Connector, Connector>(connsFrom1[i], connsTo2[0]);
-                    listTarget.Add(tuple);
-                    connsTo2.RemoveAt(0);
+                    Tuple<Connector, Connector> tuple = new Tuple<Connector, Connector>(connofFasu1[i], connofAnemo2[0]);
+                    result.Add(tuple);
+                    connofAnemo2.RemoveAt(0);
                     continue;
                 }
             }
-            for (int i = 0; i < connsFrom2.Count; i++)
+            for (int i = 0; i < connofFasu2.Count; i++)
             {
-                if (connsTo3.Count > 0)
+                if (connofAnemo3.Count > 0)
                 {
-                    Tuple<Connector, Connector> tuple = new Tuple<Connector, Connector>(connsFrom2[i], connsTo3[0]);
-                    listTarget.Add(tuple);
-                    connsTo3.RemoveAt(0);
+                    Tuple<Connector, Connector> tuple = new Tuple<Connector, Connector>(connofFasu2[i], connofAnemo3[0]);
+                    result.Add(tuple);
+                    connofAnemo3.RemoveAt(0);
                     continue;
                 }
-                if (connsTo4.Count > 0)
+                if (connofAnemo4.Count > 0)
                 {
-                    Tuple<Connector, Connector> tuple = new Tuple<Connector, Connector>(connsFrom2[i], connsTo4[0]);
-                    listTarget.Add(tuple);
-                    connsTo4.RemoveAt(0);
+                    Tuple<Connector, Connector> tuple = new Tuple<Connector, Connector>(connofFasu2[i], connofAnemo4[0]);
+                    result.Add(tuple);
+                    connofAnemo4.RemoveAt(0);
                     continue;
                 }
             }
-            return listTarget;
+            return result;
         }
-        public List<XYZ> GetPointtoConnect(Connector fromconn, Connector toconn)
+        List<XYZ> GetLocaToCreateDuct(Connector connFasu, Connector connAnemo)
         {
-            if (fromconn.CoordinateSystem.BasisZ.X == -1 || fromconn.CoordinateSystem.BasisZ.X == 1)
+            if (connFasu.CoordinateSystem.BasisZ.X == -1 || connFasu.CoordinateSystem.BasisZ.X == 1)
             {
                 return new List<XYZ>()
                 {
-                    new XYZ(toconn.Origin.X,fromconn.Origin.Y,fromconn.Origin.Z),
-                    new XYZ(toconn.Origin.X,toconn.Origin.Y,fromconn.Origin.Z)
+                    new XYZ(connAnemo.Origin.X,connFasu.Origin.Y,connFasu.Origin.Z),
+                    new XYZ(connAnemo.Origin.X,connAnemo.Origin.Y,connFasu.Origin.Z)
                 };
             }
-            else if (fromconn.CoordinateSystem.BasisZ.Y == -1 || fromconn.CoordinateSystem.BasisZ.Y == 1)
+            else if (connFasu.CoordinateSystem.BasisZ.Y == -1 || connFasu.CoordinateSystem.BasisZ.Y == 1)
             {
                 return new List<XYZ>()
                 {
-                    new XYZ(fromconn.Origin.X,toconn.Origin.Y,fromconn.Origin.Z),
-                    new XYZ(toconn.Origin.X,toconn.Origin.Y,fromconn.Origin.Z)
+                    new XYZ(connFasu.Origin.X,connAnemo.Origin.Y,connFasu.Origin.Z),
+                    new XYZ(connAnemo.Origin.X,connAnemo.Origin.Y,connFasu.Origin.Z)
                 };
             }
             else
                 return null;
         }
-        public List<Connector> GetUnConnectors(FamilyInstance fam)
+        List<Connector> GetUnConnectors(FamilyInstance fam)
         {
             List<Connector> connectors = new List<Connector>();
-            var connectorSetofDuctAccessories = fam.MEPModel.ConnectorManager.UnusedConnectors;
-            ConnectorSetIterator iteratorofDuctAccessories = connectorSetofDuctAccessories.ForwardIterator();
-            while (iteratorofDuctAccessories.MoveNext())
+            ConnectorSet connectorset = fam.MEPModel.ConnectorManager.UnusedConnectors;
+            ConnectorSetIterator iterator = connectorset.ForwardIterator();
+            while (iterator.MoveNext())
             {
-                Connector connector = iteratorofDuctAccessories.Current as Connector;
+                Connector connector = iterator.Current as Connector;
                 if (connector != null)
                     connectors.Add(connector);
             }
             return connectors;
         }
-        public List<Connector> GetUnConnectors(Duct duct)
+        List<Connector> GetUnConnectors(Duct duct)
         {
             List<Connector> connectors = new List<Connector>();
-            var connectorSetofDuctAccessories = duct.ConnectorManager.UnusedConnectors;
-            ConnectorSetIterator iteratorofDuctAccessories = connectorSetofDuctAccessories.ForwardIterator();
-            while (iteratorofDuctAccessories.MoveNext())
+            ConnectorSet connectorset = duct.ConnectorManager.UnusedConnectors;
+            ConnectorSetIterator iterator = connectorset.ForwardIterator();
+            while (iterator.MoveNext())
             {
-                Connector connector = iteratorofDuctAccessories.Current as Connector;
+                Connector connector = iterator.Current as Connector;
                 if (connector != null)
                     connectors.Add(connector);
             }
             return connectors;
         }
-        public List<Connector> GetConnectors(Duct duct)
+        List<Connector> GetConnectors(Duct duct)
         {
             List<Connector> connectors = new List<Connector>();
-            var connectorSetofDuctAccessories = duct.ConnectorManager.Connectors;
-            ConnectorSetIterator iteratorofDuctAccessories = connectorSetofDuctAccessories.ForwardIterator();
-            while (iteratorofDuctAccessories.MoveNext())
+            ConnectorSet connectorset = duct.ConnectorManager.Connectors;
+            ConnectorSetIterator iterator = connectorset.ForwardIterator();
+            while (iterator.MoveNext())
             {
-                Connector connector = iteratorofDuctAccessories.Current as Connector;
+                Connector connector = iterator.Current as Connector;
                 if (connector != null)
                     connectors.Add(connector);
             }
             return connectors;
         }
-        public List<Connector> GetUnConnectors(List<Duct> ducts)
+        List<Connector> GetUnConnectors(List<Duct> ducts)
         {
             List<Connector> connectors = new List<Connector>();
             foreach (var duct in ducts)
@@ -289,7 +306,7 @@ namespace CreateDuct
             }
             return connectors;
         }
-        public List<Connector> GetConnectors(List<Duct> ducts)
+        List<Connector> GetConnectors(List<Duct> ducts)
         {
             List<Connector> connectors = new List<Connector>();
             foreach (var duct in ducts)
@@ -298,7 +315,7 @@ namespace CreateDuct
             }
             return connectors;
         }
-        public List<Connector> GetUnConnectors(List<FamilyInstance> ducts)
+        List<Connector> GetUnConnectors(List<FamilyInstance> ducts)
         {
             List<Connector> connectors = new List<Connector>();
             foreach (var duct in ducts)
@@ -306,6 +323,26 @@ namespace CreateDuct
                 connectors.AddRange(GetUnConnectors(duct));
             }
             return connectors;
+        }
+        bool CheckDistance(Tuple<Connector, Connector> pairConnector)
+        {
+            double distanceX = Math.Abs(pairConnector.Item1.Origin.X - pairConnector.Item2.Origin.X);
+            double distanceY = Math.Abs(pairConnector.Item1.Origin.Y - pairConnector.Item2.Origin.Y);
+            if (distanceX < 1 || distanceY < 1)
+                return false;
+            return true;
+        }
+    }
+    class DuctAccessoryFilter : ISelectionFilter
+    {
+        public bool AllowElement(Element elem)
+        {
+            return elem.Category.Id.IntegerValue == -2008016;
+        }
+
+        public bool AllowReference(Reference reference, XYZ position)
+        {
+            return false;
         }
     }
 }

@@ -1,11 +1,9 @@
 ﻿using Autodesk.Revit.DB;
-using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DupSheet.Revit;
 using DupSheet.View;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
