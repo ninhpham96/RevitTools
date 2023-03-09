@@ -4,12 +4,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DupSheet.Revit;
 using DupSheet.View;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
 using System.Windows;
-using System.Windows.Input;
 
 namespace DupSheet.ViewModel
 {
@@ -38,11 +36,14 @@ namespace DupSheet.ViewModel
         private List<_Sheet> source;
         private List<ElementId> SelectedSheets = new List<ElementId>();
         public List<_Sheet> Source { get => source; set => source = value; }
+        public ActionEventHandler ActionEventHandler { get; }
+        public ElementId ElementId { get; set; }
         #endregion
         #region command
         [RelayCommand]
         private void Run()
         {
+            MessageBox.Show("11");
         }
         [RelayCommand]
         private void Clickme(_Sheet ob)
@@ -56,13 +57,30 @@ namespace DupSheet.ViewModel
                 SelectedSheets.Remove(ob.id);
             }
         }
+        [RelayCommand]
+        private void DeteleElement()
+        {
+            ActionEventHandler.Raise(application =>
+            {
+                var document = application.ActiveUIDocument.Document;
+                using (Transaction transaction = new Transaction(document, $"Delete element"))
+                {
+                    transaction.Start();
+                    document.Delete(ElementId);
+                    transaction.Commit();
+                    Debug.WriteLine("Deleted");
+                }
+            });
+            Debug.WriteLine("Command completed");
+        }
         #endregion
         #region constructor
         public DupSheetViewModel(UIApplication uiApp)
         {
             this.uidoc = uiApp.ActiveUIDocument;
             this.doc = uiApp.ActiveUIDocument.Document;
-
+            ElementId = new ElementId(378728);
+            ActionEventHandler = new ActionEventHandler();
             //set ItemsSource 
             Source = new List<_Sheet>();
             List<ViewSheet> listViewSheet = Select.instance.GetAllViewSheet(doc);

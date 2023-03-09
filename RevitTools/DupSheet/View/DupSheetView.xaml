@@ -71,6 +71,7 @@
                 </StackPanel>
             </Border>
             <Button Command="{Binding RunCommand}" Margin="0 0 10 0" HorizontalAlignment="Right" Width="50" Content="Run"/>
+            <Button Command="{Binding DeteleElementCommand}" Margin="0 0 10 0" HorizontalAlignment="Right" Width="50" Content="Delete"/>
         </StackPanel>
     </Grid>
 </Window>
