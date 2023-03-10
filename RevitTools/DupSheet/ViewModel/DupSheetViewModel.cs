@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DupSheet.Revit;
 using DupSheet.View;
+using Nice3point.Revit.Toolkit.External.Handlers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
