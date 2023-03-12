@@ -10,7 +10,6 @@ using System.Windows;
 
 namespace RevitTools.Dimmension
 {
-    [Transaction(TransactionMode.Manual)]
     public abstract class DimensionBase : IExternalCommand
     {
         public virtual Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
