@@ -14,24 +14,22 @@
                         <GridViewColumn>
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate >
-                                    <CheckBox Command="{Binding DataContext.ClickmeCommand, RelativeSource={RelativeSource AncestorType={x:Type ListView}}}"
+                                    <CheckBox Command="{Binding DataContext.runCommand, RelativeSource={RelativeSource AncestorType={x:Type ListView}}}"
                                         CommandParameter="{Binding}"
-                                        IsChecked="{Binding isChecked, Mode=TwoWay}"                                        
-                                        Content="{Binding ElementName}"
-                                        x:Name="ckbNameSheet" />
+                                              Content="{Binding Name}"
+                                        x:Name="ckbNameSheet"
+                                        IsChecked="{Binding IsChecked}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  DisplayMemberBinding="{Binding Name}" Header="ID" />
                     </GridView>
                 </ListView.View>
             </ListView>
         </Border>
         <DockPanel HorizontalAlignment="Right">
-            <Button Margin="3" Content="Check all"></Button>
-            <Button Margin="3" Content="Check none"></Button>
+            <Button Command="{Binding checkAllCommand}" Margin="3" Content="Check all"></Button>
+            <Button Command="{Binding checkNoneCommand}" Margin="3" Content="Check none"></Button>
             <Button Margin="3" Content="Run" Width="auto"></Button>
-        </DockPanel>
-       
+        </DockPanel>       
     </StackPanel>
 </Window>
