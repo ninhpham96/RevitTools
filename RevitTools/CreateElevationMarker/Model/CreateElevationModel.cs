@@ -20,6 +20,12 @@ namespace CreateElevationMarker
         {
             return new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Rooms).OfType<Room>().ToList();
         }
+        public List<ViewFamilyType> GetAllViewfamilytype(Document doc)
+        {
+            return new FilteredElementCollector(doc).OfClass(typeof(ViewFamilyType))
+                .Cast<ViewFamilyType>()
+                .Where(p => (p as ViewFamilyType).FamilyName == "Elevation").ToList();
+        }
     }
 
 }

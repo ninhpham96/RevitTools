@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CreateElevationMarker"
         mc:Ignorable="d"
-        Title="CreateElevationView" Height="600" Width="450">
+        Title="CreateElevationView" Height="550" Width="450">
     <StackPanel >
         <Border Margin="10">
             <ListView Height="400" x:Name="lsvCreateElevation">
@@ -16,9 +16,7 @@
                                 <DataTemplate >
                                     <CheckBox Command="{Binding DataContext.runCommand, RelativeSource={RelativeSource AncestorType={x:Type ListView}}}"
                                         CommandParameter="{Binding}"
-                                              Content="{Binding Name}"
-                                        x:Name="ckbNameSheet"
-                                        IsChecked="{Binding IsChecked}"/>
+                                              Content="{Binding Name}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
@@ -26,10 +24,13 @@
                 </ListView.View>
             </ListView>
         </Border>
+        <Border Margin="10">
+            <ComboBox x:Name="lsbview" DisplayMemberPath="Name"                      />
+        </Border>
         <DockPanel HorizontalAlignment="Right">
             <Button Command="{Binding checkAllCommand}" Margin="3" Content="Check all"></Button>
             <Button Command="{Binding checkNoneCommand}" Margin="3" Content="Check none"></Button>
-            <Button Margin="3" Content="Run" Width="auto"></Button>
-        </DockPanel>       
+            <Button Command="{Binding runCommand}" Margin="3" Content="Run" Width="auto"></Button>
+        </DockPanel>
     </StackPanel>
 </Window>

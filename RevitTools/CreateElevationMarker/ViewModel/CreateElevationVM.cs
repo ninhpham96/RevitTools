@@ -11,25 +11,25 @@ using System.Windows.Media;
 
 namespace CreateElevationMarker
 {
-    public partial class CreateElevationVM: ObservableObject
+    public partial class CreateElevationVM : ObservableObject
     {
         private UIDocument uidoc { get; }
         private Document doc { get; }
         List<Room> source;
+        List<Room> selectedRooms = new List<Room>();
+        List<ViewFamilyType> src;
         public List<Room> Source
         {
             get { return source; }
             set { source = value; }
         }
         private CreateElevationView _view;
-        [ObservableProperty]
-        private bool isChecked;
         public CreateElevationView view
         {
             get
             {
-                if(_view == null)
-                    _view = new CreateElevationView() { DataContext = this};
+                if (_view == null)
+                    _view = new CreateElevationView() { DataContext = this };
                 return _view;
             }
             set
@@ -38,38 +38,44 @@ namespace CreateElevationMarker
                 OnPropertyChanged();
             }
         }
-        public CreateElevationVM(UIApplication uiapp) 
+        public CreateElevationVM(UIApplication uiapp)
         {
             uidoc = uiapp.ActiveUIDocument;
             doc = uidoc.Document;
+
             Source = new List<Room>();
-            var rooms = CreateElevationModel.instance.GetAllRooms(doc);            
-            view.lsvCreateElevation.ItemsSource = rooms;
+            src = new List<ViewFamilyType>();
+
+            Source = CreateElevationModel.instance.GetAllRooms(doc);
+            src = CreateElevationModel.instance.GetAllViewfamilytype(doc);
+
+            view.lsvCreateElevation.ItemsSource = Source;
+            view.lsbview.ItemsSource = src;
+            view.lsbview.SelectedIndex = 0;
         }
 
         [RelayCommand]
-        void run(Room room)
+        void run()
         {
-
+            foreach (var r in selectedRooms)
+            {
+                CreateElevationByRoom(r);
+            }
         }
         [RelayCommand]
         void checkAll(Room room)
         {
-            foreach (var item in view.lsvCreateElevation.Items)
-            {
-                var container = view.lsvCreateElevation.ItemContainerGenerator.ContainerFromItem(item) as ListViewItem;
-                if (container != null)
-                {
-                    var checkbox = FindVisualChild<CheckBox>(container);
-                    if (checkbox != null)
-                    {
-                        checkbox.IsChecked = true;
-                    }
-                }
-            }
+            selectedRooms.AddRange(Source);
+            check(true);
+
         }
         [RelayCommand]
         void checkNone(Room room)
+        {
+            selectedRooms.Clear();
+            check(false);
+        }
+        void check(bool b)
         {
             foreach (var item in view.lsvCreateElevation.Items)
             {
@@ -79,9 +85,20 @@ namespace CreateElevationMarker
                     var checkbox = FindVisualChild<CheckBox>(container);
                     if (checkbox != null)
                     {
-                        checkbox.IsChecked = false;
+                        checkbox.IsChecked = b;
                     }
                 }
+            }
+        }
+        void CreateElevationByRoom(Room room)
+        {
+            ViewFamilyType viewFamilyType = view.lsbview.SelectedItem as ViewFamilyType;
+            XYZ loca = (room.Location as LocationPoint).Point;
+            using (Transaction tran = new Transaction(doc, "create"))
+            {
+                tran.Start();
+                var maker = ElevationMarker.CreateElevationMarker(doc, viewFamilyType.Id, loca, 100);
+                tran.Commit();
             }
         }
         private T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject

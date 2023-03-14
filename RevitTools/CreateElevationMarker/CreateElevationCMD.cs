@@ -13,10 +13,14 @@ namespace CreateElevationMarker
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Document doc = uidoc.Document;
-            CreateElevationVM createElevationVM = new CreateElevationVM(uiapp);
-            createElevationVM.view.ShowDialog();
+            using (TransactionGroup tranG = new TransactionGroup(doc, "run"))
+            {
+                tranG.Start();
+                CreateElevationVM createElevationVM = new CreateElevationVM(uiapp);
+                createElevationVM.view.ShowDialog();
+                tranG.Assimilate();
+            }            
             return Result.Succeeded;
-        }
-        
+        }        
     }
 }
