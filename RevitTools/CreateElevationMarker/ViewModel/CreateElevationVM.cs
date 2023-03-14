@@ -17,7 +17,7 @@ namespace CreateElevationMarker
         private Document doc { get; }
         List<Room> source;
         List<Room> selectedRooms = new List<Room>();
-        List<ViewFamilyType> src;
+
         public List<Room> Source
         {
             get { return source; }
@@ -38,30 +38,47 @@ namespace CreateElevationMarker
                 OnPropertyChanged();
             }
         }
+        #region constructor
         public CreateElevationVM(UIApplication uiapp)
         {
             uidoc = uiapp.ActiveUIDocument;
             doc = uidoc.Document;
 
             Source = new List<Room>();
-            src = new List<ViewFamilyType>();
 
-            Source = CreateElevationModel.instance.GetAllRooms(doc);
-            src = CreateElevationModel.instance.GetAllViewfamilytype(doc);
-
-            view.lsvCreateElevation.ItemsSource = Source;
-            view.lsbview.ItemsSource = src;
+            view.lsvCreateElevation.ItemsSource = Source = CreateElevationModel.instance.GetAllRooms(doc);
+            view.lsbview.ItemsSource = CreateElevationModel.instance.GetAllViewfamilytype(doc);
             view.lsbview.SelectedIndex = 0;
         }
-
+        #endregion
+        #region command
         [RelayCommand]
         void run()
         {
+            if (doc.ActiveView.GetType().Name == "View3D")
+            {
+                MessageBox.Show("Bạn cần chuyển về view 2D");
+                return;
+            }
             foreach (var r in selectedRooms)
             {
                 CreateElevationByRoom(r);
             }
         }
+
+        [RelayCommand]
+        void click(Room room)
+        {
+            if (selectedRooms.Contains(room))
+            {
+                selectedRooms.Remove(room);
+            }
+            else
+            {
+                selectedRooms.Add(room);
+            }
+        }
+
         [RelayCommand]
         void checkAll(Room room)
         {
@@ -69,12 +86,15 @@ namespace CreateElevationMarker
             check(true);
 
         }
+
         [RelayCommand]
         void checkNone(Room room)
         {
             selectedRooms.Clear();
             check(false);
         }
+        #endregion
+        #region methods
         void check(bool b)
         {
             foreach (var item in view.lsvCreateElevation.Items)
@@ -91,13 +111,18 @@ namespace CreateElevationMarker
             }
         }
         void CreateElevationByRoom(Room room)
-        {
+        {            
             ViewFamilyType viewFamilyType = view.lsbview.SelectedItem as ViewFamilyType;
             XYZ loca = (room.Location as LocationPoint).Point;
             using (Transaction tran = new Transaction(doc, "create"))
             {
                 tran.Start();
                 var maker = ElevationMarker.CreateElevationMarker(doc, viewFamilyType.Id, loca, 100);
+                for (int i = 0; i < 4; i++)
+                {
+                    var newEle = maker.CreateElevation(doc, doc.ActiveView.Id, i);
+                    newEle.Name = room.Name + i.ToString();
+                }
                 tran.Commit();
             }
         }
@@ -117,5 +142,6 @@ namespace CreateElevationMarker
             }
             return null;
         }
+        #endregion
     }
 }

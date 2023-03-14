@@ -3,7 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:CreateElevationMarker"
         mc:Ignorable="d"
         Title="CreateElevationView" Height="550" Width="450">
     <StackPanel >
@@ -14,7 +13,7 @@
                         <GridViewColumn>
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate >
-                                    <CheckBox Command="{Binding DataContext.runCommand, RelativeSource={RelativeSource AncestorType={x:Type ListView}}}"
+                                    <CheckBox Command="{Binding DataContext.clickCommand, RelativeSource={RelativeSource AncestorType={x:Type ListView}}}"
                                         CommandParameter="{Binding}"
                                               Content="{Binding Name}"/>
                                 </DataTemplate>
@@ -25,7 +24,7 @@
             </ListView>
         </Border>
         <Border Margin="10">
-            <ComboBox x:Name="lsbview" DisplayMemberPath="Name"                      />
+            <ComboBox x:Name="lsbview" DisplayMemberPath="Name"/>
         </Border>
         <DockPanel HorizontalAlignment="Right">
             <Button Command="{Binding checkAllCommand}" Margin="3" Content="Check all"></Button>

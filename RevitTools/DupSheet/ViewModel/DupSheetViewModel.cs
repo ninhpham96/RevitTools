@@ -4,11 +4,12 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DupSheet.Revit;
 using DupSheet.View;
-using Nice3point.Revit.Toolkit.External.Handlers;
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using vView = Autodesk.Revit.DB.View;
 
 namespace DupSheet.ViewModel
 {
@@ -18,6 +19,7 @@ namespace DupSheet.ViewModel
         private DupSheetView dupSheetView;
         private UIDocument uidoc { get; }
         private Document doc { get; }
+        List<ViewSheet> selectedSheets = new List<ViewSheet>();
         public DupSheetView DupSheetView
         {
             get
@@ -34,27 +36,19 @@ namespace DupSheet.ViewModel
                 OnPropertyChanged();
             }
         }
-        private List<_Sheet> source;
-        private List<ElementId> SelectedSheets = new List<ElementId>();
-        public List<_Sheet> Source { get => source; set => source = value; }
         #endregion
         #region command
         [RelayCommand]
         private void Run()
         {
-            MessageBox.Show("11");
+            DuplicateSelectedSheet(selectedSheets.FirstOrDefault());
         }
         [RelayCommand]
-        private void Clickme(_Sheet ob)
+        private void Clickme(ViewSheet vs)
         {
-            if (ob.isChecked)
-            {
-                SelectedSheets.Add(ob.id);
-            }
-            else
-            {
-                SelectedSheets.Remove(ob.id);
-            }
+            if (selectedSheets.Contains(vs))
+                selectedSheets.Remove(vs);
+            else selectedSheets.Add(vs);
         }
         #endregion
         #region constructor
@@ -62,29 +56,9 @@ namespace DupSheet.ViewModel
         {
             this.uidoc = uiApp.ActiveUIDocument;
             this.doc = uiApp.ActiveUIDocument.Document;
-            //set ItemsSource 
-            Source = new List<_Sheet>();
-            List<ViewSheet> listViewSheet = Select.instance.GetAllViewSheet(doc);
-            foreach (var item in listViewSheet)
-            {
-                Source.Add(new _Sheet(item));
-            }
-            DupSheetView.lsvDuplicateSheet.ItemsSource = Source;
+            DupSheetView.lsvDuplicateSheet.ItemsSource = Select.instance.GetAllViewSheet(doc);
         }
         #endregion
-    }
-    public class _Sheet
-    {
-        public string sheetName { get; set; }
-        public string sheetNumber { get; set; }
-        public ElementId id { get; set; }
-        public bool isChecked { get; set; }
-        public _Sheet(ViewSheet vs)
-        {
-            this.sheetName = vs.Name;
-            this.sheetNumber = vs.SheetNumber;
-            this.id = vs.Id;
-        }
     }
     public partial class DupSheetViewModel
     {
@@ -103,7 +77,23 @@ namespace DupSheet.ViewModel
             }
             return null;
         }
-        void duplicate_schedules(ElementId oldsheetID, ElementId newsheetID)
+
+        void DuplicateSelectedSheet(ViewSheet vs)
+        {
+            var title_block = GetSheetTitleBlock(vs.Id);
+            if (title_block != null)
+            {
+                using (Transaction tran = new Transaction(doc, "create sheet"))
+                {
+                    tran.Start();
+                    var new_sheet = ViewSheet.Create(doc, title_block);
+                    DuplicateSchedules(vs.Id, new_sheet.Id);
+                    DuplicateViews(vs, new_sheet);
+                    tran.Commit();
+                }
+            }
+        }
+        void DuplicateSchedules(ElementId oldsheetID, ElementId newsheetID)
         {
             List<ScheduleSheetInstance> viewSchedule = Select.instance.GetAllViewSchedule(doc);
             foreach (ScheduleSheetInstance item in viewSchedule)
@@ -117,11 +107,95 @@ namespace DupSheet.ViewModel
                         if (scheduleID == ElementId.InvalidElementId) continue;
                         ViewSchedule viewschedule = doc.GetElement(scheduleID) as ViewSchedule;
                         var schedule_view_id = viewschedule.Duplicate(ViewDuplicateOption.Duplicate);
-
                         ScheduleSheetInstance.Create(doc, newsheetID, schedule_view_id, origin);
                     }
                 }
             }
+        }
+        void DuplicateViews(ViewSheet oldsheet, ViewSheet newsheet)
+        {
+            ICollection<ElementId> viewports_ids = oldsheet.GetAllViewports();
+            foreach (ElementId viewport_id in viewports_ids)
+            {
+                Viewport viewport = doc.GetElement(viewport_id) as Viewport;
+                var viewport_type_id = viewport.GetTypeId();
+                var viewport_origin = viewport.GetBoxCenter();
+                var view_id = viewport.ViewId;
+                vView view = doc.GetElement(view_id) as vView;
+                vView new_view = null;
+
+                if (view.ViewType == ViewType.Legend)
+                    continue;
+                else if (view.ViewType == ViewType.ThreeD)
+                {
+                    var NewViewId = view.Duplicate(ViewDuplicateOption.Duplicate);
+                    new_view = doc.GetElement(NewViewId) as vView;
+                }
+                else
+                {
+                    if (DupSheetView.ckbOp1.IsChecked == true)
+                    {
+                        var NewViewId = view.Duplicate(ViewDuplicateOption.Duplicate);
+                        new_view = doc.GetElement(NewViewId) as vView;
+                    }
+                    else if (DupSheetView.ckbOp2.IsChecked == true)
+                    {
+                        var NewViewId = view.Duplicate(ViewDuplicateOption.WithDetailing);
+                        new_view = doc.GetElement(NewViewId) as vView;
+                    }
+                    else if (DupSheetView.ckbOp3.IsChecked == true)
+                    {
+                        var NewViewId = view.Duplicate(ViewDuplicateOption.AsDependent);
+                        new_view = doc.GetElement(NewViewId) as vView;
+                    }
+
+                }
+                if (new_view != null)
+                {
+                    Viewport new_vp = Viewport.Create(doc, newsheet.Id, new_view.Id, viewport_origin);
+                    var new_viewport_type_id = new_vp.GetTypeId();
+                    if (viewport_type_id != new_viewport_type_id)
+                    {
+                        new_vp.ChangeTypeId(viewport_type_id);
+                    }
+                }
+            }
+        }
+        void DuplicateElements(ViewSheet sourceview, ViewSheet destinationview, ElementId elementIds)
+        {
+            CopyPasteOptions copyPasteOptions = new CopyPasteOptions();
+            ElementTransformUtils.CopyElements(sourceview, (ICollection<ElementId>)elementIds, destinationview, null, copyPasteOptions);
+        }
+        void check(bool b)
+        {
+            foreach (var item in DupSheetView.lsvDuplicateSheet.Items)
+            {
+                var container = DupSheetView.lsvDuplicateSheet.ItemContainerGenerator.ContainerFromItem(item) as ListViewItem;
+                if (container != null)
+                {
+                    var checkbox = FindVisualChild<CheckBox>(container);
+                    if (checkbox != null)
+                    {
+                        checkbox.IsChecked = b;
+                    }
+                }
+            }
+        }
+        private T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child != null && child is T)
+                    return (T)child;
+                else
+                {
+                    var result = FindVisualChild<T>(child);
+                    if (result != null)
+                        return result;
+                }
+            }
+            return null;
         }
     }
 }
