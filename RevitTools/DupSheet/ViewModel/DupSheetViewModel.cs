@@ -9,6 +9,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Xml.Linq;
 using vView = Autodesk.Revit.DB.View;
 
 namespace DupSheet.ViewModel
@@ -43,7 +44,6 @@ namespace DupSheet.ViewModel
         [RelayCommand]
         private void Run()
         {
-            MessageBox.Show(CountNumber.ToString());
             if (selectedSheets.Count == 0)
             {
                 TaskDialog.Show("Thông báo", "Bạn chưa chon sheet nào để copy.", TaskDialogCommonButtons.Ok, TaskDialogResult.Ok);
@@ -51,8 +51,12 @@ namespace DupSheet.ViewModel
             }
             foreach (var sheet in selectedSheets)
             {
-                DuplicateSelectedSheet(sheet);
+                for (int i = 1; i <= CountNumber; i++)
+                {
+                    DuplicateSelectedSheet(sheet, i);
+                }
             }
+            DupSheetView.Close();
         }
         [RelayCommand]
         private void Clickme(ViewSheet vs)
@@ -88,8 +92,78 @@ namespace DupSheet.ViewModel
             }
             return null;
         }
+        void UpdateSheetName(ViewSheet sourceview, ViewSheet targetview, int i)
+        {
+            string current_name = sourceview.Name;
+            string name = string.Empty;
+            int number = 0;
+            string new_name = "";
+            for (int j = 0; j < current_name.Length; j++)
+            {
+                if ((int)current_name[j] >= 48 && (int)current_name[j] <= 57)
+                {
+                    name = current_name.Substring(0, j);
+                    number = int.Parse(current_name.Substring(j));
+                    break;
+                }
+            }
+            if (name == string.Empty)
+            {
+                //int new_number = number + i + 1;
+                //if (new_number < 10)
+                //    new_name = current_name + 0 + new_number;
+                //else
+                //    new_name = current_name + new_number;
+                new_name = current_name + "02";
+                sourceview.Name = current_name + "01";
+            }
+            else
+            {
+                int new_number = number + i;
+                if (new_number < 10)
+                    new_name = name + 0 + new_number;
+                else
+                    new_name = name + new_number;
+            }
+            targetview.Name = new_name;
+        }
+        void UpdateSheetNumer(ViewSheet sourceview, ViewSheet targetview, int i)
+        {
+            string current_sheetnumber = sourceview.SheetNumber;
+            string sheetnumber = string.Empty;
+            int number = 0;
+            string new_sheetnumber = "";
+            for (int j = 0; j < current_sheetnumber.Length; j++)
+            {
+                if ((int)current_sheetnumber[j] >= 48 && (int)current_sheetnumber[j] <= 57)
+                {
+                    sheetnumber = current_sheetnumber.Substring(0, j);
+                    number = int.Parse(current_sheetnumber.Substring(j));
+                    break;
+                }
+            }
+            if (sheetnumber == string.Empty)
+            {
+                new_sheetnumber = sheetnumber + "02";
+                sourceview.Name = sheetnumber + "01";
+            }
+            else
+            {
+                int new_number = number + i;
+                if (new_number < 10)
+                    new_sheetnumber = sheetnumber + 0 + new_number;
+                else
+                    new_sheetnumber = sheetnumber + new_number;
 
-        void DuplicateSelectedSheet(ViewSheet vs)
+                //int new_number = number + i;
+                //if (number < 10)
+                //    new_sheetnumber = sheetnumber + 0 + new_number;
+                //else
+                //    new_sheetnumber = sheetnumber + new_number;
+            }
+            targetview.SheetNumber = new_sheetnumber;
+        }
+        void DuplicateSelectedSheet(ViewSheet vs, int i)
         {
             var title_block = GetSheetTitleBlock(vs.Id);
             if (title_block != null)
@@ -98,26 +172,28 @@ namespace DupSheet.ViewModel
                 {
                     tran.Start();
                     var new_sheet = ViewSheet.Create(doc, title_block);
-                    if (DupSheetView.ckbSchedules.IsChecked == true)
-                        DuplicateSchedules(vs.Id, new_sheet.Id);
-                    if (DupSheetView.ckbView.IsChecked == true)
-                        DuplicateViews(vs, new_sheet);
-                    if (DupSheetView.ckbLines.IsChecked == true)
-                        DuplicateLines(vs, new_sheet);
-                    if (DupSheetView.ckbClouds.IsChecked == true)
-                        DuplicateClouds(vs, new_sheet);
-                    if (DupSheetView.ckbLegend.IsChecked == true)
-                        Duplicatelegends(vs, new_sheet);
-                    if (DupSheetView.ckbImages.IsChecked == true)
-                        DuplicateImages(vs, new_sheet);
-                    if (DupSheetView.ckbView.IsChecked == true)
-                        DuplicateTexts(vs, new_sheet);
-                    if (DupSheetView.ckbDimensions.IsChecked == true)
-                        DuplicateDimensions(vs, new_sheet);
-                    if (DupSheetView.ckbSymbols.IsChecked == true)
-                        DuplicateSymbols(vs, new_sheet);
-                    if (DupSheetView.ckbDWGs.IsChecked == true)
-                        DuplicateDwgs(vs, new_sheet);
+                    UpdateSheetName(vs, new_sheet, i);
+                    UpdateSheetNumer(vs, new_sheet, i);
+                    //if (DupSheetView.ckbSchedules.IsChecked == true)
+                    //    DuplicateSchedules(vs.Id, new_sheet.Id);
+                    //if (DupSheetView.ckbView.IsChecked == true)
+                    //    DuplicateViews(vs, new_sheet);
+                    //if (DupSheetView.ckbLines.IsChecked == true)
+                    //    DuplicateLines(vs, new_sheet);
+                    //if (DupSheetView.ckbClouds.IsChecked == true)
+                    //    DuplicateClouds(vs, new_sheet);
+                    //if (DupSheetView.ckbLegend.IsChecked == true)
+                    //    Duplicatelegends(vs, new_sheet);
+                    //if (DupSheetView.ckbImages.IsChecked == true)
+                    //    DuplicateImages(vs, new_sheet);
+                    //if (DupSheetView.ckbView.IsChecked == true)
+                    //    DuplicateTexts(vs, new_sheet);
+                    //if (DupSheetView.ckbDimensions.IsChecked == true)
+                    //    DuplicateDimensions(vs, new_sheet);
+                    //if (DupSheetView.ckbSymbols.IsChecked == true)
+                    //    DuplicateSymbols(vs, new_sheet);
+                    //if (DupSheetView.ckbDWGs.IsChecked == true)
+                    //    DuplicateDwgs(vs, new_sheet);
                     tran.Commit();
                 }
             }
