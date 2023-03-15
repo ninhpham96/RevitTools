@@ -36,12 +36,23 @@ namespace DupSheet.ViewModel
                 OnPropertyChanged();
             }
         }
+        [ObservableProperty]
+        private int countNumber = 1;
         #endregion
         #region command
         [RelayCommand]
         private void Run()
         {
-            DuplicateSelectedSheet(selectedSheets.FirstOrDefault());
+            MessageBox.Show(CountNumber.ToString());
+            if (selectedSheets.Count == 0)
+            {
+                TaskDialog.Show("Thông báo", "Bạn chưa chon sheet nào để copy.", TaskDialogCommonButtons.Ok, TaskDialogResult.Ok);
+                return;
+            }
+            foreach (var sheet in selectedSheets)
+            {
+                DuplicateSelectedSheet(sheet);
+            }
         }
         [RelayCommand]
         private void Clickme(ViewSheet vs)
@@ -87,9 +98,70 @@ namespace DupSheet.ViewModel
                 {
                     tran.Start();
                     var new_sheet = ViewSheet.Create(doc, title_block);
-                    DuplicateSchedules(vs.Id, new_sheet.Id);
-                    DuplicateViews(vs, new_sheet);
+                    if (DupSheetView.ckbSchedules.IsChecked == true)
+                        DuplicateSchedules(vs.Id, new_sheet.Id);
+                    if (DupSheetView.ckbView.IsChecked == true)
+                        DuplicateViews(vs, new_sheet);
+                    if (DupSheetView.ckbLines.IsChecked == true)
+                        DuplicateLines(vs, new_sheet);
+                    if (DupSheetView.ckbClouds.IsChecked == true)
+                        DuplicateClouds(vs, new_sheet);
+                    if (DupSheetView.ckbLegend.IsChecked == true)
+                        Duplicatelegends(vs, new_sheet);
+                    if (DupSheetView.ckbImages.IsChecked == true)
+                        DuplicateImages(vs, new_sheet);
+                    if (DupSheetView.ckbView.IsChecked == true)
+                        DuplicateTexts(vs, new_sheet);
+                    if (DupSheetView.ckbDimensions.IsChecked == true)
+                        DuplicateDimensions(vs, new_sheet);
+                    if (DupSheetView.ckbSymbols.IsChecked == true)
+                        DuplicateSymbols(vs, new_sheet);
+                    if (DupSheetView.ckbDWGs.IsChecked == true)
+                        DuplicateDwgs(vs, new_sheet);
                     tran.Commit();
+                }
+            }
+        }
+        void Duplicatelegends(ViewSheet sourceview, ViewSheet destinationview)
+        {
+            ICollection<ElementId> viewports_ids = sourceview.GetAllViewports();
+            foreach (ElementId viewport_id in viewports_ids)
+            {
+                Viewport viewport = doc.GetElement(viewport_id) as Viewport;
+                var viewport_type_id = viewport.GetTypeId();
+                var viewport_origin = viewport.GetBoxCenter();
+                var view_id = viewport.ViewId;
+                vView view = doc.GetElement(view_id) as vView;
+
+                if (view.ViewType == ViewType.Legend)
+                {
+                    vView legend_view = view;
+                    //if(DupSheetView.ckbLegend.IsChecked == true)
+                    //{
+                    //    ElementId legend_view_id = view.Duplicate(ViewDuplicateOption.WithDetailing);
+                    //    legend_view = doc.GetElement(legend_view_id) as vView;
+                    //    Viewport new_viewport = Viewport.Create(doc, destinationview.Id, legend_view.Id, viewport_origin);
+                    //    if (new_viewport != null)
+                    //    {
+                    //        var new_viewport_type_id = new_viewport.GetTypeId();
+                    //        if (viewport_type_id != new_viewport_type_id)
+                    //        {
+                    //            new_viewport.ChangeTypeId(viewport_type_id);
+                    //        }
+                    //    }
+                    //}
+                    //else
+                    //{
+                    Viewport new_viewport = Viewport.Create(doc, destinationview.Id, legend_view.Id, viewport_origin);
+                    if (new_viewport != null)
+                    {
+                        var new_viewport_type_id = new_viewport.GetTypeId();
+                        if (viewport_type_id != new_viewport_type_id)
+                        {
+                            new_viewport.ChangeTypeId(viewport_type_id);
+                        }
+                        //    }
+                    }
                 }
             }
         }
@@ -161,11 +233,52 @@ namespace DupSheet.ViewModel
                 }
             }
         }
-        void DuplicateElements(ViewSheet sourceview, ViewSheet destinationview, ElementId elementIds)
+        void DuplicateElements(ViewSheet sourceview, ViewSheet destinationview, ICollection<ElementId> elementIds)
         {
-            CopyPasteOptions copyPasteOptions = new CopyPasteOptions();
-            ElementTransformUtils.CopyElements(sourceview, (ICollection<ElementId>)elementIds, destinationview, null, copyPasteOptions);
+            if (elementIds.Count > 0)
+            {
+                CopyPasteOptions copyPasteOptions = new CopyPasteOptions();
+                ElementTransformUtils.CopyElements(sourceview, elementIds, destinationview, null, copyPasteOptions);
+            }
         }
+        void DuplicateLines(ViewSheet sourceview, ViewSheet destinationview)
+        {
+            var lines_on_sheet = new FilteredElementCollector(doc, sourceview.Id).OfCategory(BuiltInCategory.OST_Lines).ToElementIds();
+            DuplicateElements(sourceview, destinationview, lines_on_sheet);
+        }
+        void DuplicateClouds(ViewSheet sourceview, ViewSheet destinationview)
+        {
+            List<BuiltInCategory> categories = new List<BuiltInCategory>() { BuiltInCategory.OST_RevisionClouds, BuiltInCategory.OST_RevisionCloudTags };
+            var filter = new ElementMulticategoryFilter(categories);
+            var clouds_and_tags_ids = new FilteredElementCollector(doc, sourceview.Id).WherePasses(filter).ToElementIds();
+            DuplicateElements(sourceview, destinationview, clouds_and_tags_ids);
+        }
+        void DuplicateImages(ViewSheet sourceview, ViewSheet destinationview)
+        {
+            var images_on_sheet = new FilteredElementCollector(doc, sourceview.Id).OfCategory(BuiltInCategory.OST_RasterImages).ToElementIds();
+            DuplicateElements(sourceview, destinationview, images_on_sheet);
+        }
+        void DuplicateTexts(ViewSheet sourceview, ViewSheet destinationview)
+        {
+            var texts_on_sheet = new FilteredElementCollector(doc, sourceview.Id).OfCategory(BuiltInCategory.OST_TextNotes).ToElementIds();
+            DuplicateElements(sourceview, destinationview, texts_on_sheet);
+        }
+        void DuplicateDimensions(ViewSheet sourceview, ViewSheet destinationview)
+        {
+            var dims_on_sheet = new FilteredElementCollector(doc, sourceview.Id).OfCategory(BuiltInCategory.OST_Dimensions).ToElementIds();
+            DuplicateElements(sourceview, destinationview, dims_on_sheet);
+        }
+        void DuplicateSymbols(ViewSheet sourceview, ViewSheet destinationview)
+        {
+            var symbols_on_sheet = new FilteredElementCollector(doc, sourceview.Id).OfCategory(BuiltInCategory.OST_GenericAnnotation).ToElementIds();
+            DuplicateElements(sourceview, destinationview, symbols_on_sheet);
+        }
+        void DuplicateDwgs(ViewSheet sourceview, ViewSheet destinationview)
+        {
+            var dims_on_sheet = new FilteredElementCollector(doc, sourceview.Id).OfClass(typeof(ImportInstance)).ToElementIds();
+            DuplicateElements(sourceview, destinationview, dims_on_sheet);
+        }
+        #region
         void check(bool b)
         {
             foreach (var item in DupSheetView.lsvDuplicateSheet.Items)
@@ -197,5 +310,6 @@ namespace DupSheet.ViewModel
             }
             return null;
         }
+        #endregion
     }
 }

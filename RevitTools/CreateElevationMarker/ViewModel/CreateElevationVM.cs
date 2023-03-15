@@ -3,7 +3,6 @@ using Autodesk.Revit.DB;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Autodesk.Revit.DB.Architecture;
 using System.Collections.Generic;
-using System.Linq;
 using CommunityToolkit.Mvvm.Input;
 using System.Windows;
 using System.Windows.Controls;

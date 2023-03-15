@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="DupSheetView" Height="450" Width="660">
+        Title="DupSheetView" WindowStartupLocation="CenterScreen" Height="450" Width="660">
     <Grid >
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1*"/>
@@ -70,7 +70,11 @@
                     </DockPanel>
                 </StackPanel>
             </Border>
-            <Button Command="{Binding RunCommand}" Margin="0 0 10 0" HorizontalAlignment="Right" Width="50" Content="Run"/>
+            <DockPanel HorizontalAlignment="Right">
+                <Label Content="Count"/>
+                <TextBox  TextAlignment="Center" x:Name="number" Text="{Binding CountNumber}" Width="30" Margin="2" />
+                <Button Command="{Binding RunCommand}" Margin="2 2 10 2" HorizontalAlignment="Right" Width="50" Content="Run"/>
+            </DockPanel>
         </StackPanel>
     </Grid>
 </Window>
