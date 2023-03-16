@@ -3,50 +3,71 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:RevitTools"
         mc:Ignorable="d"
         WindowStartupLocation="CenterScreen"
-        Title="Auto Tag Room" Height="350" Width="400">
+        Title="Auto Tag Room" Height="375" Width="200">
     <Grid>
         <StackPanel Margin="5">
             <Border BorderThickness="2">
                 <DockPanel>
-                    <RadioButton x:Name="rbtNotTruss" Width=" 150" HorizontalAlignment="Center" IsChecked="True" GroupName="1" Content="Not Truss"/>
-                    <RadioButton x:Name="rbtTruss" HorizontalAlignment="Center" GroupName="1" Content="Truss"/>
+                    <RadioButton Command="{Binding CheckCommand}"
+                                 x:Name="rbtNotTruss" Width=" 75" HorizontalAlignment="Center" IsChecked="True" GroupName="1" Content="Not Truss"/>
+                    <RadioButton Command="{Binding CheckCommand}" 
+                                 x:Name="rbtTruss" HorizontalAlignment="Center" GroupName="1" Content="Truss"/>
                     <RadioButton x:Name="rbtC工事" HorizontalAlignment="Center" GroupName="2" Content="C工事"/>
                 </DockPanel>
             </Border>
             <Border>
                 <StackPanel>
                     <Label Content="Tag Room"/>
-                    <ComboBox x:Name="cbtagRoom"/>
+                    <ComboBox ItemsSource="{Binding SrcroomName}" SelectedIndex="0"
+                        DisplayMemberPath="Name" 
+                              x:Name="cbtagRoom"/>
                 </StackPanel>
             </Border>
             <Border>
                 <StackPanel>
                     <Label Content="Tag Wall"/>
-                    <ComboBox x:Name="cbtagWall"/>
+                    <ComboBox ItemsSource="{Binding SrcroomWall}" SelectedIndex="0"
+                        DisplayMemberPath="Name" 
+                              x:Name="cbtagWall"/>
                 </StackPanel>
             </Border>
             <Border>
                 <StackPanel>
                     <Label Content="Tag Floor"/>
-                    <ComboBox x:Name="cbtagFloor"/>
+                    <ComboBox ItemsSource="{Binding SrcroomFloor}" SelectedIndex="0"
+                        DisplayMemberPath="Name" 
+                              x:Name="cbtagFloor"/>
                 </StackPanel>
             </Border>
             <Border>
                 <StackPanel>
                     <Label Content="Tag Ceiling"/>
-                    <ComboBox x:Name="cbtagCeil"/>
+                    <ComboBox ItemsSource="{Binding SrcroomCeiling}" SelectedIndex="0"
+                              DisplayMemberPath="Name" 
+                              x:Name="cbtagCeil"/>
+                </StackPanel>
+            </Border>
+            <Border>
+                <StackPanel>
+                    <Label Content="Tag Habaki"/>
+                    <ComboBox ItemsSource="{Binding SrcroomHabaki}" SelectedIndex="0"
+                              DisplayMemberPath="Name" 
+                              x:Name="cbtagHabaki"/>
                 </StackPanel>
             </Border>
             <Border>
                 <StackPanel>
                     <Label Content="Tag 廻り縁"/>
-                    <ComboBox x:Name="cbtagMawari"/>
+                    <ComboBox ItemsSource="{Binding SrcroomConnectCeiling}" SelectedIndex="0"
+                              DisplayMemberPath="Name" 
+                              x:Name="cbtagMawari"/>
                 </StackPanel>
             </Border>
-            <Button Width="50" HorizontalAlignment="Right" Content="Run"/>
+            <Button Command="{Binding RunCommand}"
+                Margin="0 5 0 0" Width="50" 
+                HorizontalAlignment="Right" Content="Run"/>
         </StackPanel>
 
     </Grid>
