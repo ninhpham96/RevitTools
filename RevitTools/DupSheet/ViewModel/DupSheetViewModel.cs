@@ -5,11 +5,9 @@ using CommunityToolkit.Mvvm.Input;
 using DupSheet.Revit;
 using DupSheet.View;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Xml.Linq;
 using vView = Autodesk.Revit.DB.View;
 
 namespace DupSheet.ViewModel
@@ -77,6 +75,7 @@ namespace DupSheet.ViewModel
     }
     public partial class DupSheetViewModel
     {
+        #region methods
         ElementId GetSheetTitleBlock(ElementId id)
         {
             var all_title_block = new FilteredElementCollector(doc).
@@ -354,6 +353,7 @@ namespace DupSheet.ViewModel
             var dims_on_sheet = new FilteredElementCollector(doc, sourceview.Id).OfClass(typeof(ImportInstance)).ToElementIds();
             DuplicateElements(sourceview, destinationview, dims_on_sheet);
         }
+        #endregion
         #region
         void check(bool b)
         {
