@@ -13,6 +13,7 @@ namespace RevitTools
 {
     public partial class AutoTagRoomVM : ObservableObject
     {
+        #region field
         private AutoTagRoomView _view;
         public AutoTagRoomView view
         {
@@ -28,6 +29,10 @@ namespace RevitTools
                 OnPropertyChanged();
             }
         }
+        private UIDocument uidoc;
+        private Document doc;
+        List<Room> rooms;
+        List<RoomTagType> source;
         [ObservableProperty]
         public ObservableCollection<RoomTagType> srcroomName = new ObservableCollection<RoomTagType>();
         [ObservableProperty]
@@ -39,36 +44,72 @@ namespace RevitTools
         [ObservableProperty]
         private ObservableCollection<RoomTagType> srcroomHabaki = new ObservableCollection<RoomTagType>();
         [ObservableProperty]
-        private ObservableCollection<RoomTagType> srcroomConnectCeiling = new ObservableCollection<RoomTagType>();
-
+        private ObservableCollection<RoomTagType> srcroomCeilingConnect = new ObservableCollection<RoomTagType>();
+        #endregion
+        #region command
         [RelayCommand]
         void Run()
         {
-            MessageBox.Show("Test");
+            MessageBox.Show(rooms.First().Name);
+            try
+            {
+                using (Transaction tran = new Transaction(doc, "tao tag"))
+                {
+                    tran.Start();
+                    XYZ cen = GetRoomCenter(rooms.First());
+                    UV center = new UV(cen.X, cen.Y);
+                    RoomTag roomTag = doc.Create.NewRoomTag(new LinkElementId(rooms.First().Id), center, doc.ActiveView.Id);
+                    roomTag.TagHeadPosition = new XYZ(cen.X,cen.Y,cen.Z);
+                    tran.Commit();
+                }
+            }
+            catch (System.Exception e)
+            {
+                MessageBox.Show(e.Message);
+                throw;
+            }
         }
         [RelayCommand]
         void Check()
         {
-            if(view.rbtTruss.IsChecked == true)
-            {
-                MessageBox.Show("11");
-            }
-            else
-            {
-                MessageBox.Show("22");
-            }
-        }
-        private UIDocument uidoc;
-        public AutoTagRoomVM(UIDocument uidoc)
-        {
-            List<RoomTagType> source = new List<RoomTagType>(GetData.instance.GetAllTagRoom(uidoc.Document));
-            if (true)
+            ClearSource();
+            if (view.rbtNotTruss.IsChecked == true)
             {
                 SetItemSource(source, true);
             }
-            this.uidoc = uidoc;
+            if (view.rbtTruss.IsChecked == true)
+            {
+                SetItemSource(source, false);
+            }
+            SetSelectedIndex();
         }
-
+        #endregion
+        public AutoTagRoomVM(UIDocument uidoc)
+        {
+            this.uidoc = uidoc;
+            doc = uidoc.Document;
+            rooms = GetData.instance.GetRooms(doc);
+            source = GetData.instance.GetAllTagRoom(uidoc.Document);
+            if (true)
+            {
+                SetItemSource(source, true);
+                SetSelectedIndex();
+            }
+        }
+        #region methods
+        public XYZ GetRoomCenter(Room room)
+        {
+            XYZ boundCenter = GetElementCenter(room);
+            LocationPoint locPt = (LocationPoint)room.Location;
+            XYZ roomCenter = new XYZ(boundCenter.X, boundCenter.Y, locPt.Point.Z);
+            return roomCenter;
+        }
+        public XYZ GetElementCenter(Element elem)
+        {
+            BoundingBoxXYZ bounding = elem.get_BoundingBox(null);
+            XYZ center = (bounding.Max + bounding.Min) * 0.5;
+            return center;
+        }
         void SetItemSource(List<RoomTagType> source, bool b)
         {
             if (b)
@@ -83,7 +124,7 @@ namespace RevitTools
 
                 SrcroomHabaki = new ObservableCollection<RoomTagType>(source.Where(p => p.FamilyName == "dタグ_部屋_幅木").Cast<RoomTagType>().ToList());
 
-                SrcroomConnectCeiling = new ObservableCollection<RoomTagType>(source.Where(p => p.FamilyName == "dタグ_部屋_見切縁").Cast<RoomTagType>().ToList());
+                SrcroomCeilingConnect = new ObservableCollection<RoomTagType>(source.Where(p => p.FamilyName == "dタグ_部屋_見切縁").Cast<RoomTagType>().ToList());
             }
             else
             {
@@ -97,8 +138,27 @@ namespace RevitTools
 
                 SrcroomHabaki = new ObservableCollection<RoomTagType>(source.Where(p => p.FamilyName == "dタグ_部屋_幅木_Truss対応").Cast<RoomTagType>().ToList());
 
-                SrcroomConnectCeiling = new ObservableCollection<RoomTagType>(source.Where(p => p.FamilyName == "dタグ_部屋_見切縁_Truss対応").Cast<RoomTagType>().ToList());
+                SrcroomCeilingConnect = new ObservableCollection<RoomTagType>(source.Where(p => p.FamilyName == "dタグ_部屋_見切縁_Truss対応").Cast<RoomTagType>().ToList());
             }
         }
+        void SetSelectedIndex()
+        {
+            view.cbtagCeil.SelectedIndex = 0;
+            view.cbtagFloor.SelectedIndex = 0;
+            view.cbtagRoom.SelectedIndex = 0;
+            view.cbtagMawari.SelectedIndex = 0;
+            view.cbtagWall.SelectedIndex = 0;
+            view.cbtagHabaki.SelectedIndex = 0;
+
+        }
+        void ClearSource()
+        {
+            SrcroomName.Clear();
+            SrcroomWall.Clear();
+            SrcroomCeiling.Clear();
+            SrcroomFloor.Clear();
+            SrcroomCeilingConnect.Clear();
+        }
+        #endregion
     }
 }

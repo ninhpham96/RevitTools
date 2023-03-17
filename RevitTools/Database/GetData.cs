@@ -26,5 +26,10 @@ namespace RevitTools
             }
             return null;
         }
+        public List<Room> GetRooms(Document doc)
+        {
+            List<Room> rooms = new FilteredElementCollector(doc,doc.ActiveView.Id).OfCategory(BuiltInCategory.OST_Rooms).Cast<Room>().ToList();
+            return rooms;
+        }
     }
 }
