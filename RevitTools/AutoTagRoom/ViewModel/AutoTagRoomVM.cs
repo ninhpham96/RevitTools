@@ -50,23 +50,26 @@ namespace RevitTools
         [RelayCommand]
         void Run()
         {
-            MessageBox.Show(rooms.First().Name);
             try
             {
                 using (Transaction tran = new Transaction(doc, "tao tag"))
                 {
                     tran.Start();
+                    var typeid = view.cbtagRoom.SelectedItem as RoomTagType;
+                    MessageBox.Show(typeid.Id.ToString());
                     XYZ cen = GetRoomCenter(rooms.First());
                     UV center = new UV(cen.X, cen.Y);
                     RoomTag roomTag = doc.Create.NewRoomTag(new LinkElementId(rooms.First().Id), center, doc.ActiveView.Id);
-                    roomTag.TagHeadPosition = new XYZ(cen.X,cen.Y,cen.Z);
+                    roomTag.ChangeTypeId(typeid.Id);
+                    roomTag.HasLeader = true;
+                    roomTag.TagHeadPosition = rooms.First().get_BoundingBox(doc.ActiveView).Max-1;
+                    //roomTag.HasLeader = false;
                     tran.Commit();
                 }
             }
             catch (System.Exception e)
             {
                 MessageBox.Show(e.Message);
-                throw;
             }
         }
         [RelayCommand]
@@ -106,7 +109,7 @@ namespace RevitTools
         }
         public XYZ GetElementCenter(Element elem)
         {
-            BoundingBoxXYZ bounding = elem.get_BoundingBox(null);
+            BoundingBoxXYZ bounding = elem.get_BoundingBox(doc.ActiveView);
             XYZ center = (bounding.Max + bounding.Min) * 0.5;
             return center;
         }
