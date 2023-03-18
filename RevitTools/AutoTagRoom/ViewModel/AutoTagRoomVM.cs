@@ -52,20 +52,7 @@ namespace RevitTools
         {
             try
             {
-                using (Transaction tran = new Transaction(doc, "tao tag"))
-                {
-                    tran.Start();
-                    var typeid = view.cbtagRoom.SelectedItem as RoomTagType;
-                    MessageBox.Show(typeid.Id.ToString());
-                    XYZ cen = GetRoomCenter(rooms.First());
-                    UV center = new UV(cen.X, cen.Y);
-                    RoomTag roomTag = doc.Create.NewRoomTag(new LinkElementId(rooms.First().Id), center, doc.ActiveView.Id);
-                    roomTag.ChangeTypeId(typeid.Id);
-                    roomTag.HasLeader = true;
-                    roomTag.TagHeadPosition = rooms.First().get_BoundingBox(doc.ActiveView).Max-1;
-                    //roomTag.HasLeader = false;
-                    tran.Commit();
-                }
+                TagRoom(rooms.First());
             }
             catch (System.Exception e)
             {
@@ -100,6 +87,47 @@ namespace RevitTools
             }
         }
         #region methods
+        void TagRoom(Room room)
+        {
+            using (Transaction tran = new Transaction(doc, "create tag"))
+            {
+                tran.Start();
+                var loca = room.get_BoundingBox(doc.ActiveView);
+                //create tag room name
+                RoomTag roomTag = doc.Create.NewRoomTag(new LinkElementId(room.Id), new UV(0, 0), doc.ActiveView.Id);
+                roomTag.ChangeTypeId((view.cbtagRoom.SelectedItem as RoomTagType).Id);
+                roomTag.HasLeader = true;
+                roomTag.TagHeadPosition = roomTag.LeaderEnd;
+                roomTag.HasLeader = false;
+
+                //CreateDuct tag room wall
+                RoomTag roomTag1 = doc.Create.NewRoomTag(new LinkElementId(room.Id), new UV(0, 0), doc.ActiveView.Id);
+                roomTag1.ChangeTypeId((view.cbtagWall.SelectedItem as RoomTagType).Id);
+                roomTag1.HasLeader = true;
+                roomTag1.LeaderEnd = new XYZ(roomTag1.LeaderEnd.X - 4, roomTag1.LeaderEnd.Y, roomTag1.LeaderEnd.Z + 3);
+                roomTag1.HasLeader = false;
+
+                //create tag ceiling
+                RoomTag roomTag2 = doc.Create.NewRoomTag(new LinkElementId(room.Id), new UV(0, 0), doc.ActiveView.Id);
+                roomTag2.ChangeTypeId((view.cbtagCeil.SelectedItem as RoomTagType).Id);
+                roomTag2.HasLeader = true;
+                roomTag2.LeaderEnd = new XYZ(roomTag2.LeaderEnd.X, roomTag2.LeaderEnd.Y, loca.Max.Z);
+                roomTag2.TagHeadPosition = new XYZ(roomTag2.LeaderEnd.X - 5, roomTag2.LeaderEnd.Y, loca.Max.Z);
+                roomTag2.LeaderElbow = new XYZ(roomTag2.LeaderEnd.X - 1, roomTag2.LeaderEnd.Y, loca.Max.Z - 1.4278034315115);
+
+                //create tag floor
+                RoomTag roomTag3 = doc.Create.NewRoomTag(new LinkElementId(room.Id), new UV(0, 0), doc.ActiveView.Id);
+                roomTag3.ChangeTypeId((view.cbtagFloor.SelectedItem as RoomTagType).Id);
+                roomTag3.HasLeader = true;
+                roomTag3.LeaderEnd = new XYZ(roomTag3.LeaderEnd.X - 10, roomTag3.LeaderEnd.Y, loca.Min.Z);
+                roomTag3.TagHeadPosition = new XYZ(roomTag3.LeaderEnd.X - 3, roomTag3.LeaderEnd.Y, loca.Min.Z + 6);
+                roomTag3.LeaderElbow = new XYZ(roomTag3.LeaderEnd.X - 3, roomTag3.LeaderEnd.Y, loca.Min.Z+6);
+
+                view.Close();
+                tran.Commit();
+            }
+        }
+
         public XYZ GetRoomCenter(Room room)
         {
             XYZ boundCenter = GetElementCenter(room);
