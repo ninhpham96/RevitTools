@@ -62,7 +62,7 @@ namespace RevitTools
                     RoomTag roomTag = doc.Create.NewRoomTag(new LinkElementId(rooms.First().Id), center, doc.ActiveView.Id);
                     roomTag.ChangeTypeId(typeid.Id);
                     roomTag.HasLeader = true;
-                    roomTag.TagHeadPosition = rooms.First().get_BoundingBox(doc.ActiveView).Max-1;
+                    roomTag.TagHeadPosition = rooms.First().get_BoundingBox(doc.ActiveView).Max;
                     //roomTag.HasLeader = false;
                     tran.Commit();
                 }
