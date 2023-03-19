@@ -1,14 +1,12 @@
-﻿using Autodesk.Revit.Attributes;
-using Autodesk.Revit.DB;
+﻿using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 
-namespace RevitTools.Dimmension
+namespace RevitTools
 {
     public abstract class DimensionBase : IExternalCommand
     {
@@ -142,9 +140,9 @@ namespace RevitTools.Dimmension
             var viewScale = doc.ActiveView.Scale;
             try
             {
-                DimGrid(uidoc, FindVerticalGrids(grids),20);
-                DimGrid(uidoc, new List<Grid>() { FindVerticalGrids(grids).First(), FindVerticalGrids(grids).Last() },10);
-                DimGrid(uidoc, FindHorizontalGrids(grids),20);
+                DimGrid(uidoc, FindVerticalGrids(grids), 20);
+                DimGrid(uidoc, new List<Grid>() { FindVerticalGrids(grids).First(), FindVerticalGrids(grids).Last() }, 10);
+                DimGrid(uidoc, FindHorizontalGrids(grids), 20);
                 DimGrid(uidoc, new List<Grid>() { FindHorizontalGrids(grids).First(), FindHorizontalGrids(grids).Last() }, 10);
             }
             catch (Exception e)
@@ -152,7 +150,52 @@ namespace RevitTools.Dimmension
                 MessageBox.Show(e.Message);
             }
         }
-        private void DimGrid(UIDocument uidoc, List<Grid> grids, double dis)
+        protected void AutoDim(UIDocument uidoc, List<FamilyInstance> families, List<Grid> grid)
+        {
+            Document doc = uidoc.Document;
+            ReferenceArray refs = new ReferenceArray();
+            foreach (FamilyInstance family in families)
+            {
+                var r = family.GetReferenceByName("center");
+                if (r != null)
+                    refs.Append(r);
+            }
+            if (grid != null)
+            {
+                foreach (Grid g in grid)
+                {
+                    if (g != null)
+                    {
+                        Reference gridRef = null;
+                        Options opt = new Options();
+                        opt.ComputeReferences = true;
+                        opt.IncludeNonVisibleObjects = true;
+                        opt.View = doc.ActiveView;
+                        foreach (GeometryObject obj in g.get_Geometry(opt))
+                        {
+                            if (obj is Line)
+                            {
+                                Line l = obj as Line;
+                                gridRef = l.Reference;
+                                refs.Append(gridRef);
+                            }
+                        }
+                    }
+                }
+            }
+            var point = uidoc.Selection.PickPoint(Autodesk.Revit.UI.Selection.ObjectSnapTypes.None);
+            Line line = Line.CreateUnbound(point, new XYZ(0, 0, 1).CrossProduct(new XYZ(0, 10, 0)));
+            using (Transaction tran = new Transaction(doc, "dim"))
+            {
+                tran.Start();
+                if (!doc.IsFamilyDocument)
+                {
+                    doc.Create.NewDimension(doc.ActiveView, line, refs);
+                }
+                tran.Commit();
+            }
+        }
+        protected void DimGrid(UIDocument uidoc, List<Grid> grids, double dis)
         {
             Document doc = uidoc.Document;
             var viewscale = doc.ActiveView.Scale;
@@ -197,5 +240,17 @@ namespace RevitTools.Dimmension
             }
         }
     }
-
+    public class SeclectFamilyInstance : ISelectionFilter
+    {
+        public bool AllowElement(Element elem)
+        {
+            if ((elem as FamilyInstance) != null && elem.Category.Name.Equals("Detail Items"))
+                return true;
+            else return false;
+        }
+        public bool AllowReference(Reference reference, XYZ position)
+        {
+            return false;
+        }
+    }
 }

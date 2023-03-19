@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+	<AddIn Type="Application">
+		<Name>Revit Tools</Name>
+		<Assembly>RevitTools.dll</Assembly>
+		<ClientId>02CE865E-25E7-4942-8720-D4CB182E9062</ClientId>
+		<FullClassName>RevitTools.App</FullClassName>
+		<VendorId>ADSK</VendorId>
+		<VendorDescription>Autodesk, www.autodesk.com</VendorDescription>
+	</AddIn>
+</RevitAddIns>

@@ -17,7 +17,8 @@
                         <GridViewColumn>
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate >
-                                    <CheckBox Command="{Binding DataContext.ClickmeCommand, RelativeSource={RelativeSource AncestorType={x:Type ListView}}}"
+                                    <CheckBox Command="{Binding DataContext.ClickmeCommand,
+                                        RelativeSource={RelativeSource AncestorType={x:Type ListView}}}"
                                         CommandParameter="{Binding}"
                                         IsChecked="{Binding isChecked, Mode=TwoWay}"
                                         Tag="{Binding Id}"

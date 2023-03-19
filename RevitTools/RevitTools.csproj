@@ -9,6 +9,7 @@
 		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 		<LangVersion>latest</LangVersion>
 		<Configurations>Debug</Configurations>
+		<ApplicationManifest>App\RevitTools.addin</ApplicationManifest>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="$(Configuration.Contains('Debug'))">
@@ -19,12 +20,43 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="Resources\autotag_32x32.png" />
+	  <None Remove="Resources\autotag_64x64.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Include="App\RevitTools.addin">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </EmbeddedResource>
+	  <EmbeddedResource Include="Resources\autotag_32x32.png">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </EmbeddedResource>
+	  <EmbeddedResource Include="Resources\autotag_64x64.png">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.1.0" />
-		<PackageReference Include="JetBrains.Annotations" Version="2022.3.1" />
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 		<PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2022.1.1" />
 		<PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2022.1.1" />
 		<PackageReference Include="Nice3point.Revit.Toolkit" Version="2023.0.12" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Update="Properties\Resources.Designer.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>Resources.resx</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Update="Properties\Resources.resx">
+	    <Generator>ResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
 	</ItemGroup>
 
 	<ItemGroup>

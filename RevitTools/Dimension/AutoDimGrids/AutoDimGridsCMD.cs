@@ -1,15 +1,12 @@
 ﻿using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using RevitTools.Dimmension;
-using System;
 using System.Linq;
-using System.Windows;
 
-namespace AutoDimGrids
+namespace RevitTools
 {
     [Transaction(TransactionMode.Manual)]
-    public class Command : DimensionBase
+    public class AutoDimGridsCMD : DimensionBase
     {
         public override Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {

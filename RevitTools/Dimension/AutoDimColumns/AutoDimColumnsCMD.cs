@@ -1,16 +1,14 @@
 ﻿using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using RevitTools.Dimmension;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows;
 
-namespace AutoDimColumns
+namespace RevitTools
 {
     [Transaction(TransactionMode.Manual)]
-    public class Command : DimensionBase
+    public class AutoDimColumnsCMD : DimensionBase
     {
         public override Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
