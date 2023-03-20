@@ -183,7 +183,7 @@ namespace RevitTools
                     }
                 }
             }
-            var point = uidoc.Selection.PickPoint(Autodesk.Revit.UI.Selection.ObjectSnapTypes.None);
+            var point = uidoc.Selection.PickPoint(ObjectSnapTypes.None);
             Line line = Line.CreateUnbound(point, new XYZ(0, 0, 1).CrossProduct(new XYZ(0, 10, 0)));
             using (Transaction tran = new Transaction(doc, "dim"))
             {

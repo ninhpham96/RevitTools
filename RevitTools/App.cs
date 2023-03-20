@@ -50,7 +50,7 @@ namespace RevitTools
             {
                 panel = application.CreateRibbonPanel(tabName, panelName);
             }
-            Image image = Properties.Resources.autotag_64x64;
+            Image image = Properties.Resources.autotag_32x32;
             ImageSource imageSource = GetImageSource(image);
 
             PushButtonData pushButtonData = new PushButtonData("AutoTag", "RoomTag", Assembly.GetExecutingAssembly().Location, "RevitTools.AutoTagRoomCMD")
