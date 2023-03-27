@@ -1,17 +1,10 @@
 ﻿using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
-using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
-using CommunityToolkit.Mvvm.DependencyInjection;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Shapes;
-using System.Xml.Linq;
 
 namespace RevitTools
 {
@@ -25,15 +18,14 @@ namespace RevitTools
             Document doc = uidoc.Document;
 
             List<RevitLinkInstance> linkInstances = new FilteredElementCollector(doc)
-            .OfClass(typeof(RevitLinkInstance))
-                            .Cast<RevitLinkInstance>().ToList();
+            .OfClass(typeof(RevitLinkInstance)).Cast<RevitLinkInstance>().ToList();
             var docLinked = linkInstances.First().GetLinkDocument();
-            var refElemLinked = uidoc.Selection.PickObject(ObjectType.LinkedElement, "Please pick an element in the linked model");
-                Element elem = docLinked.GetElement(refElemLinked.LinkedElementId);
+            var refElemLinked = uidoc.Selection.PickObjects(ObjectType.LinkedElement, "Please pick an element in the linked model");
+            foreach (var item in refElemLinked)
+            {
+                Element elem = docLinked.GetElement(item.LinkedElementId);
                 MessageBox.Show(elem.Name);
-            //foreach (var item in refElemLinked)
-            //{
-            //}
+            }
 
 
 

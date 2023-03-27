@@ -5,10 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
-using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.Attributes;
-using DupSheet.View;
 using DupSheet.ViewModel;
+using Microsoft.Win32;
 
 [Transaction(TransactionMode.Manual)]
 public class DupSheetCMD : IExternalCommand
@@ -19,6 +18,8 @@ public class DupSheetCMD : IExternalCommand
         Document doc = uiApp.ActiveUIDocument.Document;
         DupSheetViewModel dupSheetViewModel = new DupSheetViewModel(uiApp);
         dupSheetViewModel.DupSheetView.ShowDialog();
+
+        
         return Result.Succeeded;
     }
 }

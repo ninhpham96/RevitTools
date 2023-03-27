@@ -12,9 +12,13 @@ namespace RevitTools
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-
-            AutoTagRoomVM autoTagRoomVM = new AutoTagRoomVM(uidoc);
-            autoTagRoomVM.view.ShowDialog();
+            using(TransactionGroup tranG = new TransactionGroup(uidoc.Document, ""))
+            {
+                tranG.Start();
+                AutoTagRoomVM autoTagRoomVM = new AutoTagRoomVM(uidoc);
+                autoTagRoomVM.view.ShowDialog();
+                tranG.Assimilate();
+            }
 
             return Result.Succeeded;
         }

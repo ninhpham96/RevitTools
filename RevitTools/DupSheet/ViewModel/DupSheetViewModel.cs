@@ -173,26 +173,26 @@ namespace DupSheet.ViewModel
                     var new_sheet = ViewSheet.Create(doc, title_block);
                     UpdateSheetName(vs, new_sheet, i);
                     UpdateSheetNumer(vs, new_sheet, i);
-                    //if (DupSheetView.ckbSchedules.IsChecked == true)
-                    //    DuplicateSchedules(vs.Id, new_sheet.Id);
-                    //if (DupSheetView.ckbView.IsChecked == true)
-                    //    DuplicateViews(vs, new_sheet);
-                    //if (DupSheetView.ckbLines.IsChecked == true)
-                    //    DuplicateLines(vs, new_sheet);
-                    //if (DupSheetView.ckbClouds.IsChecked == true)
-                    //    DuplicateClouds(vs, new_sheet);
-                    //if (DupSheetView.ckbLegend.IsChecked == true)
-                    //    Duplicatelegends(vs, new_sheet);
-                    //if (DupSheetView.ckbImages.IsChecked == true)
-                    //    DuplicateImages(vs, new_sheet);
-                    //if (DupSheetView.ckbView.IsChecked == true)
-                    //    DuplicateTexts(vs, new_sheet);
-                    //if (DupSheetView.ckbDimensions.IsChecked == true)
-                    //    DuplicateDimensions(vs, new_sheet);
-                    //if (DupSheetView.ckbSymbols.IsChecked == true)
-                    //    DuplicateSymbols(vs, new_sheet);
-                    //if (DupSheetView.ckbDWGs.IsChecked == true)
-                    //    DuplicateDwgs(vs, new_sheet);
+                    if (DupSheetView.ckbSchedules.IsChecked == true)
+                        DuplicateSchedules(vs.Id, new_sheet.Id);
+                    if (DupSheetView.ckbView.IsChecked == true)
+                        DuplicateViews(vs, new_sheet);
+                    if (DupSheetView.ckbLines.IsChecked == true)
+                        DuplicateLines(vs, new_sheet);
+                    if (DupSheetView.ckbClouds.IsChecked == true)
+                        DuplicateClouds(vs, new_sheet);
+                    if (DupSheetView.ckbLegend.IsChecked == true)
+                        Duplicatelegends(vs, new_sheet);
+                    if (DupSheetView.ckbImages.IsChecked == true)
+                        DuplicateImages(vs, new_sheet);
+                    if (DupSheetView.ckbView.IsChecked == true)
+                        DuplicateTexts(vs, new_sheet);
+                    if (DupSheetView.ckbDimensions.IsChecked == true)
+                        DuplicateDimensions(vs, new_sheet);
+                    if (DupSheetView.ckbSymbols.IsChecked == true)
+                        DuplicateSymbols(vs, new_sheet);
+                    if (DupSheetView.ckbDWGs.IsChecked == true)
+                        DuplicateDwgs(vs, new_sheet);
                     tran.Commit();
                 }
             }
