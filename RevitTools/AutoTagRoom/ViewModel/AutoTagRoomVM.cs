@@ -61,6 +61,7 @@ namespace RevitTools
                     }
                 }
                 view.Close();
+                return;
             }
             catch (System.Exception e)
             {
@@ -86,6 +87,17 @@ namespace RevitTools
         {
             this.uidoc = uidoc;
             doc = uidoc.Document;
+            if (doc.ActiveView.ViewType != ViewType.Section)
+            {
+                TaskDialog.Show("Cảnh báo", "Chuyển qua ViewSection");
+                return;
+            }
+            else if (doc.ActiveView.Scale != 50 && doc.ActiveView.Scale != 60)
+            {
+                TaskDialog.Show("Cảnh báo", "Cần chuyển tỉ lệ về 1:50 hoặc 1:60");
+                return;
+            }
+            view.ShowDialog();
             rooms = GetData.instance.GetRooms(doc);
             source = GetData.instance.GetAllTagRoom(uidoc.Document);
             if (true)
@@ -316,7 +328,7 @@ namespace RevitTools
                         tran.Commit();
                     }
                 }
-                else if(doc.ActiveView.Scale == 60)
+                else if (doc.ActiveView.Scale == 60)
                 {
                     using (Transaction tran = new Transaction(doc, "create tag"))
                     {
@@ -334,14 +346,14 @@ namespace RevitTools
                         RoomTag roomTag1 = doc.Create.NewRoomTag(new LinkElementId(room.Id), new UV(0, 0), doc.ActiveView.Id);
                         roomTag1.ChangeTypeId((view.cbtagWall.SelectedItem as RoomTagType).Id);
                         roomTag1.HasLeader = true;
-                        roomTag1.LeaderEnd = new XYZ(roomTag1.LeaderEnd.X, roomTag1.LeaderEnd.Y-2, roomTag1.LeaderEnd.Z + 1);
+                        roomTag1.LeaderEnd = new XYZ(roomTag1.LeaderEnd.X, roomTag1.LeaderEnd.Y - 2, roomTag1.LeaderEnd.Z + 1);
                         roomTag1.HasLeader = false;
 
                         //create tag ceiling
                         RoomTag roomTag2 = doc.Create.NewRoomTag(new LinkElementId(room.Id), new UV(0, 0), doc.ActiveView.Id);
                         roomTag2.ChangeTypeId((view.cbtagCeil.SelectedItem as RoomTagType).Id);
                         roomTag2.HasLeader = true;
-                        roomTag2.LeaderEnd = new XYZ(roomTag2.LeaderEnd.X, roomTag2.LeaderEnd.Y+1, loca.Max.Z);
+                        roomTag2.LeaderEnd = new XYZ(roomTag2.LeaderEnd.X, roomTag2.LeaderEnd.Y + 1, loca.Max.Z);
                         roomTag2.TagHeadPosition = new XYZ(roomTag2.LeaderEnd.X, roomTag2.LeaderEnd.Y - 2, loca.Max.Z);
                         roomTag2.LeaderElbow = new XYZ(roomTag2.LeaderEnd.X, roomTag2.LeaderEnd.Y - 0.5, loca.Max.Z - 0.8566820589069);
 
@@ -349,7 +361,7 @@ namespace RevitTools
                         RoomTag roomTag3 = doc.Create.NewRoomTag(new LinkElementId(room.Id), new UV(0, 0), doc.ActiveView.Id);
                         roomTag3.ChangeTypeId((view.cbtagFloor.SelectedItem as RoomTagType).Id);
                         roomTag3.HasLeader = true;
-                        roomTag3.LeaderEnd = new XYZ(roomTag3.LeaderEnd.X, roomTag3.LeaderEnd.Y-1, loca.Min.Z);
+                        roomTag3.LeaderEnd = new XYZ(roomTag3.LeaderEnd.X, roomTag3.LeaderEnd.Y - 1, loca.Min.Z);
                         roomTag3.TagHeadPosition = new XYZ(roomTag3.LeaderEnd.X, roomTag3.LeaderEnd.Y, loca.Min.Z + 3.5);
                         roomTag3.LeaderElbow = new XYZ(roomTag3.LeaderEnd.X, roomTag3.LeaderEnd.Y + 0.5, loca.Min.Z + 0.81757808238097);
                         #endregion

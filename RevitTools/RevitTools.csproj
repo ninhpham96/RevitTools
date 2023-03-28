@@ -65,6 +65,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Page Update="AutoTagRoom\View\AutoTagRoomView.xaml">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Page>
+	</ItemGroup>
+
+	<ItemGroup>
 	  <Reference Update="PresentationCore">
 	    <Private>False</Private>
 	  </Reference>
