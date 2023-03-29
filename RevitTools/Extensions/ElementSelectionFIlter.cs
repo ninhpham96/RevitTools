@@ -17,7 +17,6 @@ namespace RevitTools
             return ipickSelectionOption.PickElements(uidoc, validateElement);
         }
     }
-
     public interface IpickSelectionOption
     {
         List<Element> PickElements(UIDocument uidoc, Func<Element, bool> validateElement);

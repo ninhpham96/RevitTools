@@ -195,6 +195,22 @@ namespace RevitTools
                 tran.Commit();
             }
         }
+        protected void AutoDim(UIDocument uidoc, ReferenceArray refs)
+        {
+            Document doc = uidoc.Document;
+            var point = uidoc.Selection.PickPoint();
+            XYZ dir = new XYZ(0, 0, 1).CrossProduct(new XYZ(0, 10, 0));
+
+            MessageBox.Show(dir.X + " " + dir.Y + " " + dir.Z);
+
+            Line line = Line.CreateUnbound(point, point + dir * 100);
+            using (Transaction tran = new Transaction(doc, "dim"))
+            {
+                tran.Start();
+                doc.Create.NewDimension(doc.ActiveView, line, refs);
+                tran.Commit();
+            }
+        }
         protected void DimGrid(UIDocument uidoc, List<Grid> grids, double dis)
         {
             Document doc = uidoc.Document;
