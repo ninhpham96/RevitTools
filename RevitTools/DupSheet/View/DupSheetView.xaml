@@ -4,7 +4,11 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
+        xmlns:local="clr-namespace:DupSheet.ViewModel"
         Title="DupSheetView" WindowStartupLocation="CenterScreen" Height="450" Width="660">
+    <Window.Resources>
+        
+    </Window.Resources>
     <Grid >
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1*"/>

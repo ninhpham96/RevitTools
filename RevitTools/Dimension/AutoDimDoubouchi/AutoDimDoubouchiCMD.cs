@@ -31,29 +31,29 @@ namespace RevitTools
             //MessageBox.Show(referenceArray.Size.ToString());
             // Lấy đối tượng View hiện tại.
             // Lấy đối tượng View hiện tại.
-            //View currentView = doc.ActiveView;
+            View currentView = doc.ActiveView;
 
-            //// Lấy tất cả các đối tượng RevitLinkInstance trong view đó.
-            //FilteredElementCollector collector = new FilteredElementCollector(doc, currentView.Id);
-            //RevitLinkInstance linkInstance = collector.OfClass(typeof(RevitLinkInstance)).Cast<RevitLinkInstance>().First();
+            // Lấy tất cả các đối tượng RevitLinkInstance trong view đó.
+            FilteredElementCollector collector = new FilteredElementCollector(doc, currentView.Id);
+            RevitLinkInstance linkInstance = collector.OfClass(typeof(RevitLinkInstance)).Cast<RevitLinkInstance>().First();
 
-            //Document linkedDoc = linkInstance.GetLinkDocument();
+            Document linkedDoc = linkInstance.GetLinkDocument();
 
-            //// Lấy tất cả các đối tượng mà RevitLinkInstance chứa và nằm trong phạm vi view hiện tại.
-            //BoundingBoxXYZ bbox = currentView.CropBox;
-            //Outline outline = new Outline(bbox.Min, bbox.Max);
-            //BoundingBoxIntersectsFilter bboxFilter = new BoundingBoxIntersectsFilter(outline);
-            //FilteredElementCollector linkedCollector = new FilteredElementCollector(linkedDoc);
-            //linkedCollector.WherePasses(bboxFilter);
-            //List<FamilyInstance> linkedElements = linkedCollector
-            //    .OfCategory(BuiltInCategory.OST_GenericModel).Cast<FamilyInstance>().ToList();
-            //foreach (FamilyInstance linkedElement in linkedElements)
-            //{
-            //    if (linkedElement.Document.Equals(linkedDoc))
-            //    {
-            //        referenceArray.Append(linkedElement.GetReferenceByName("Center (Left/Right)"));
-            //    }
-            //}
+            // Lấy tất cả các đối tượng mà RevitLinkInstance chứa và nằm trong phạm vi view hiện tại.
+            BoundingBoxXYZ bbox = currentView.CropBox;
+            Outline outline = new Outline(bbox.Min, bbox.Max);
+            BoundingBoxIntersectsFilter bboxFilter = new BoundingBoxIntersectsFilter(outline);
+            FilteredElementCollector linkedCollector = new FilteredElementCollector(linkedDoc);
+            linkedCollector.WherePasses(bboxFilter);
+            List<FamilyInstance> linkedElements = linkedCollector
+                .OfCategory(BuiltInCategory.OST_GenericModel).Cast<FamilyInstance>().ToList();
+            foreach (FamilyInstance linkedElement in linkedElements)
+            {
+                if (linkedElement.Document.Equals(linkedDoc))
+                {
+                    referenceArray.Append(linkedElement.GetReferenceByName("中心(左/右)"));
+                }
+            }
             //using (TransactionGroup tranG = new TransactionGroup(doc, "Auto Dim"))
             //{
             //    tranG.Start();
@@ -61,13 +61,13 @@ namespace RevitTools
             //    tranG.Assimilate();
             //}
 
-            var ele = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_GenericModel)
-                .WhereElementIsNotElementType().Cast<FamilyInstance>()
-                .ToList();
-            foreach (var item in ele)
-            {
-                referenceArray.Append(item.GetReferenceByName("Center (Front/Back)"));
-            }
+            //var ele = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_GenericModel)
+            //    .WhereElementIsNotElementType().Cast<FamilyInstance>()
+            //    .ToList();
+            //foreach (var item in ele)
+            //{
+            //    referenceArray.Append(item.GetReferenceByName("Center (Front/Back)"));
+            //}
             using (TransactionGroup tranG = new TransactionGroup(doc, "Auto Dim"))
             {
                 tranG.Start();
